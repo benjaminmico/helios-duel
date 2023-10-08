@@ -1,9 +1,18 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { SplashScreen, Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
+import { legacy_createStore as createStore, applyMiddleware } from 'redux';
+import rootReducer from './game/reducers';
+import { Provider } from 'react-redux';
+import thunk from 'redux-thunk';
+import store from './game/reducers';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -11,8 +20,7 @@ export {
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: 'game/start',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -39,17 +47,22 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <Provider store={store}>
+      <RootLayoutNav />;
+    </Provider>
+  );
 }
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
+  console.log('colorScheme', colorScheme);
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name='game' options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>
   );
