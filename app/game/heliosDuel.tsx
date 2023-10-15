@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet, Pressable } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Player,
@@ -8,6 +8,8 @@ import {
   skipTurn,
   Game,
   canPlayMultipleCards,
+  canPlayCard,
+  rollDiceAndSkipTurn,
 } from '@/gameFunctions';
 import { RootState } from './reducers';
 import { actionPlayCard } from './actions/gameActions';
@@ -26,99 +28,215 @@ const GameScreen: React.FC<Props> = () => {
   const dispatch = useDispatch();
   const game = useSelector((state: RootState) => state.game);
   const [selectedCards, setSelectedCards] = React.useState<Card[]>([]);
+  const [lastCardPlayedCount, setLastCardPlayedCount] = useState<number>(0);
 
-  // Function to handle player's turn when a card is played
+  console.log('sssss', selectedCards);
+
   const handlePlayCard = (player: Player, card: Card) => {
     const isPlayerTurn = player === game.currentPlayer;
+    const lastCardPlayed =
+      game.cardsHistory.length > 0 ? game.cardsHistory[0].cardsPlayed[0] : null;
 
-    if (isPlayerTurn) {
-      const newSelectedCards = [...selectedCards, card];
-      const isMultipleCardsPlayable = canPlayMultipleCards(
-        game,
-        player,
-        newSelectedCards
+    const foundedLastCardPlayed =
+      game.cardsHistory.length > 0 ? game.cardsHistory[0].cardsPlayed : null;
+
+    if (foundedLastCardPlayed?.length !== lastCardPlayedCount)
+      setLastCardPlayedCount(foundedLastCardPlayed?.length || 0);
+
+    if (
+      selectedCards.length &&
+      selectedCards[0].position &&
+      card.position !== selectedCards[0].position
+    ) {
+      const newSelectedCards = [...selectedCards];
+      const cardIndex = newSelectedCards.findIndex(
+        (selectedCard) => selectedCard.id === card.id
       );
 
-      if (isMultipleCardsPlayable) {
-        setSelectedCards(newSelectedCards);
+      if (cardIndex !== -1) {
+        // La carte est déjà sélectionnée, donc nous la retirons de la sélection
+        newSelectedCards.splice(cardIndex, 1);
       }
+      console.log('AAAA');
+      setSelectedCards(newSelectedCards);
+      return;
+    }
+
+    if (
+      foundedLastCardPlayed &&
+      foundedLastCardPlayed?.length === selectedCards?.length
+    ) {
+      const newSelectedCards = [...selectedCards];
+      const cardIndex = newSelectedCards.findIndex(
+        (selectedCard) =>
+          selectedCard.type === card.type && selectedCard.value === card.value
+      );
+      if (cardIndex !== -1) {
+        console.log('BBBBB', cardIndex);
+
+        // La carte est déjà sélectionnée, donc nous la retirons de la sélection
+        newSelectedCards.splice(cardIndex, 1);
+      }
+      setSelectedCards(newSelectedCards);
+      return;
+    }
+
+    if (isPlayerTurn) {
+      const newSelectedCards = [...selectedCards];
+
+      if (
+        !lastCardPlayed ||
+        (newSelectedCards.length === 0 && card.position === card.position) ||
+        (newSelectedCards.length > 0 &&
+          newSelectedCards[0].position === card.position &&
+          newSelectedCards.length < 2 &&
+          card.position >= lastCardPlayed.position)
+      ) {
+        const cardIndex = newSelectedCards.findIndex(
+          (selectedCard) =>
+            selectedCard.type === card.type && selectedCard.value === card.value
+        );
+
+        if (cardIndex !== -1) {
+          // La carte est déjà sélectionnée, donc nous la retirons de la sélection
+          newSelectedCards.splice(cardIndex, 1);
+        } else {
+          // La carte n'est pas sélectionnée, nous l'ajoutons à la sélection
+          newSelectedCards.push(card);
+        }
+      }
+
+      setSelectedCards(newSelectedCards);
     }
   };
 
   // Function to handle player's turn when they skip their turn
-  const handleSkipTurn = (player: Player) => {
-    const isPlayerTurn = player === game.currentPlayer;
-
-    if (isPlayerTurn) {
-      skipTurn(game, player, game.deck);
-      setSelectedCards([]); // Clear selected cards after skipping turn
+  const handleSkipTurn = () => {
+    const newGame = rollDiceAndSkipTurn(game);
+    if (newGame) {
+      dispatch(actionPlayCard(newGame));
     }
+    setSelectedCards([]); // Clear selected cards after skipping turn
+    setLastCardPlayedCount(0);
   };
 
   // Function to play the selected cards
   const playSelectedCards = (playedCards: Card[]) => {
-    console.log('cardssss', playedCards);
+    console.log('playedCards', playedCards);
+    const newGame = playCard(game, game.currentPlayer, playedCards);
+
+    console.log('newGame', newGame);
+
     if (playedCards.length >= 1) {
       const newGame = playCard(game, game.currentPlayer, playedCards);
-      console.log('newGame', newGame);
       if (newGame) {
         dispatch(actionPlayCard(newGame));
       }
       setSelectedCards([]); // Clear selected cards after playing
+      setLastCardPlayedCount(0);
     }
   };
 
-  // Function to check if it's the bot's turn and play its turn
   const playBotTurnIfNecessary = async () => {
+    console.log('PLAYER BOT');
     const currentPlayer = game.currentPlayer;
     if (currentPlayer.id === 'bot') {
       const botCards = await getBotCards(game, currentPlayer.id);
-
-      console.log('BOT CARDS', botCards);
-
+      if (!botCards?.length) {
+        handleSkipTurn();
+        return;
+      }
       playSelectedCards(botCards);
     }
   };
 
   // Handle bot's turn when the component mounts
   React.useEffect(() => {
-    playBotTurnIfNecessary();
-  }, [game.currentPlayer]);
+    setTimeout(() => playBotTurnIfNecessary(), 100);
+  }, [game.currentPlayer.id]);
 
   // Sort the player's cards in ascending order
-  const sortedCards = game.currentPlayer.cards.sort(
-    (a, b) => a.value - b.value
-  );
+  const sortedCards = game.players
+    .find((player) => player.id !== 'bot')
+    .cards.sort((a, b) => a.position - b.position);
 
-  console.log('game', game);
+  const gameCards = game.cardsHistory.map((card) => {
+    return {
+      playerId: card.playerId,
+      cardsPlayed: card.cardsPlayed.map((c) => c.value),
+    };
+  });
+
+  console.log('LLL', lastCardPlayedCount, selectedCards?.length);
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Card Game</Text>
       <View>
         <Text>Current Player: {game.currentPlayer.id}</Text>
-        <Text>Cards Played: {JSON.stringify(game.cardsHistory)}</Text>
+        {}
+        <Text>Cards Played: </Text>
+        {gameCards.map((card, item) => {
+          return <Text key={item}>{JSON.stringify(card)}</Text>;
+        })}
       </View>
       <View style={styles.buttonContainer}>
-        {sortedCards.map((card, index) => (
-          <Button
-            key={`${game.currentPlayer.id}_${index}_${card.type}_${card.value}`}
-            title={card.value.toString()}
-            onPress={() => handlePlayCard(game.currentPlayer, card)}
-            disabled={selectedCards.includes(card)}
-          />
-        ))}
-        <Button
-          title='Skip Turn'
-          onPress={() => handleSkipTurn(game.currentPlayer)}
-        />
+        {sortedCards.map((card, index) => {
+          const canPlay = canPlayCard(game, game.currentPlayer, card);
+          const isCardSelected = selectedCards.some(
+            (selectedCard) =>
+              selectedCard.type === card.type &&
+              selectedCard.value === card.value
+          );
+
+          return (
+            <Pressable
+              key={`${game.currentPlayer.id}_${index}_${card.type}_${card.value}`}
+              onPress={() => handlePlayCard(game.currentPlayer, card)}
+              disabled={!canPlay}
+              style={{
+                width: 60,
+                height: 90,
+                marginHorizontal: 4,
+                padding: 16,
+                backgroundColor: isCardSelected ? 'green' : 'black',
+                justifyContent: 'center',
+                alignItems: 'center',
+                opacity: canPlay ? 1.0 : 0.3,
+              }}
+            >
+              <Text
+                style={{
+                  color: 'white',
+                  fontWeight: '800',
+                }}
+              >
+                {card.value.toString()}
+              </Text>
+            </Pressable>
+          );
+        })}
+        <Pressable
+          onPress={handleSkipTurn}
+          style={{
+            marginHorizontal: 4,
+            padding: 16,
+            backgroundColor: 'black',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: 'white', fontWeight: '800' }}>Skip turn</Text>
+        </Pressable>
       </View>
-      {selectedCards.length >= 1 && (
-        <Button
-          title='Play Selected Cards'
-          onPress={() => playSelectedCards(selectedCards)}
-        />
-      )}
-      <Button title='Next Turn' onPress={() => playBotTurnIfNecessary()} />
+      <Button
+        title='Play Selected Cards'
+        onPress={() => playSelectedCards(selectedCards)}
+        disabled={
+          selectedCards?.length < lastCardPlayedCount ||
+          selectedCards.length === 0
+        }
+      />
     </View>
   );
 };

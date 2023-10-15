@@ -6,8 +6,10 @@ export interface CurrentCard {
 }
 
 export interface Card {
+  id: string;
   type: CardType;
   value: string;
+  position: number;
   isTurnedOff: boolean;
 }
 
@@ -123,8 +125,10 @@ const suits = ['HEARTS', 'DIAMONDS', 'CLUBS', 'SPADES'];
 for (const suit of suits) {
   for (let value = 2; value <= 10; value++) {
     const card: Card = {
+      id: uuidv4(),
       type: `NORMAL_${suit}` as CardType,
       value: value.toString(),
+      position: value,
       isTurnedOff: false,
     };
     standardCards.push(card);
@@ -133,27 +137,93 @@ for (const suit of suits) {
 
 // Add face cards (J, Q, K, A) for each suit
 const faceValues = ['J', 'Q', 'K', 'A'];
+const positionFaceMapping: { [key in (typeof faceValues)[number]]: number } = {
+  J: 11,
+  Q: 12,
+  K: 13,
+  A: 14,
+};
+
 for (const suit of suits) {
   for (const value of faceValues) {
     const card: Card = {
+      id: uuidv4(),
       type: `NORMAL_${suit}` as CardType,
       value: value,
+      position: positionFaceMapping[value],
       isTurnedOff: false,
     };
     standardCards.push(card);
   }
 }
 
+// case CardType.JOKER:
+//   return 16;
+// case CardType.HADES:
+//   return 15;
+// case CardType.ARTEMIS:
+//   return 14;
+// case CardType.HYPNOS:
+//   return 13;
+
 // Define the special cards (JOKER, HADES, ARTEMIS, HYPNOS)
 const specialCards: Card[] = [
-  { type: CardType.JOKER, value: 'JOKER', isTurnedOff: false },
-  { type: CardType.JOKER, value: 'JOKER', isTurnedOff: false },
-  { type: CardType.HADES, value: 'HADES', isTurnedOff: false },
-  { type: CardType.HADES, value: 'HADES', isTurnedOff: false },
-  { type: CardType.ARTEMIS, value: 'ARTEMIS', isTurnedOff: false },
-  { type: CardType.ARTEMIS, value: 'ARTEMIS', isTurnedOff: false },
-  { type: CardType.HYPNOS, value: 'HYPNOS', isTurnedOff: false },
-  { type: CardType.HYPNOS, value: 'HYPNOS', isTurnedOff: false },
+  {
+    id: uuidv4(),
+    type: CardType.JOKER,
+    value: 'JOKER',
+    position: 18,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.JOKER,
+    value: 'JOKER',
+    position: 18,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.HADES,
+    value: 'HADES',
+    position: 17,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.HADES,
+    value: 'HADES',
+    position: 17,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.ARTEMIS,
+    value: 'ARTEMIS',
+    position: 16,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.ARTEMIS,
+    value: 'ARTEMIS',
+    position: 16,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.HYPNOS,
+    value: 'HYPNOS',
+    position: 15,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.HYPNOS,
+    value: 'HYPNOS',
+    position: 15,
+    isTurnedOff: false,
+  },
 ];
 
 // Combine the standard cards and special cards to create the deck
@@ -256,12 +326,17 @@ export function drawCardFromDeck(game: Game): Card | null {
   return deck.shift()!;
 }
 
+export function skipTurn(game: Game, currentPlayer: Player): Game {
+  game.currentPlayer = game.players.find(
+    (player) => player.id !== currentPlayer.id
+  )!;
+
+  return game;
+}
+
 // Function to handle Helios rule when a player cannot or does not want to play a card
-export function skipTurn(
-  game: Game,
-  currentPlayer: Player,
-  deck: Card[]
-): void {
+export function rollDiceAndSkipTurn(game: Game): Game {
+  const { currentPlayer } = game;
   const diceRoll = rollDice();
   console.log(`${currentPlayer.id} rolled: ${diceRoll}`);
 
@@ -270,34 +345,72 @@ export function skipTurn(
     const drawnCard = drawCardFromDeck(game);
     if (drawnCard) {
       console.log(`${currentPlayer.id} drew a card: ${drawnCard.value}`);
-      game.currentPlayer = game.players.find(
-        (player) => player !== currentPlayer
-      )!;
-      currentPlayer.cards.push(drawnCard);
+
+      // Find the index of the current player in the game.players array
+      const currentPlayerIndex = game.players.findIndex(
+        (player) => player.id === currentPlayer.id
+      );
+
+      // If the current player is found in the game.players array, add the drawn card to their cards
+      if (currentPlayerIndex !== -1) {
+        game.players[currentPlayerIndex].cards.push(drawnCard);
+      }
     }
-  } else {
-    // Do not draw a card and give the hand to the other player
-    game.currentPlayer = game.players.find(
-      (player) => player !== currentPlayer
-    )!;
   }
 
-  currentPlayer.cards = [];
+  game = skipTurn(game, currentPlayer);
+
+  // Clean the cards history
+  game.cardsHistory = [];
+
+  return game;
 }
 
 export function canPlayCard(game: Game, player: Player, card: Card): boolean {
-  const lastCardPlayed =
-    game.cardsHistory.length > 0 ? game.cardsHistory[0].cardsPlayed[0] : null;
+  if (!game.cardsHistory.length) {
+    return true;
+  }
+
+  const playerCards = player.cards;
+  const sameCardOccurences = playerCards.filter(
+    (playerCard) => playerCard.position === card.position
+  ).length;
+
+  const lastCardsPlayed = game.cardsHistory[0].cardsPlayed;
 
   if (!player.cards.includes(card)) {
     return false;
   }
 
-  if (!lastCardPlayed) {
-    return true;
-  }
+  console.log('lastCardsPlayed', lastCardsPlayed);
 
-  if (calculateCardValue(card) >= calculateCardValue(lastCardPlayed)) {
+  // if (
+  //   lastCardsPlayed.length > 1 &&
+  //   lastCardsPlayed[0].position === lastCardsPlayed[1].position
+  // ) {
+  //   return false;
+  // }
+
+  // New Logic for the case you mentioned
+  if (lastCardsPlayed.length > 1) {
+    if (
+      card.position >= lastCardsPlayed[0].position &&
+      sameCardOccurences >= lastCardsPlayed.length
+    ) {
+      return true;
+    }
+    console.log('BBBB');
+    // Check if the card being played has the same length as the last cards
+    if ([card].length < lastCardsPlayed.length) {
+      return false;
+    }
+
+    // Ensure the card being played has a position higher or equal to the last card played
+    if (card.position < lastCardsPlayed[0].position) {
+      return false;
+    }
+  } else if (card.position >= lastCardsPlayed[0].position) {
+    console.log('heuiehriu');
     return true;
   }
 
@@ -316,43 +429,27 @@ export function canPlayMultipleCards(
     }
   }
 
-  const lastCardsPlayed =
-    game.cardsHistory.length > 0 ? game.cardsHistory[0].cardsPlayed : [];
-  const numberOfLastCardsPlayed = lastCardsPlayed.length;
+  const lastCardPlayed =
+    game.cardsHistory.length > 0 ? game.cardsHistory[0].cardsPlayed[0] : null;
+
   const numberOfCards = cards.length;
 
-  if (
-    numberOfLastCardsPlayed === 0 ||
-    numberOfLastCardsPlayed !== numberOfCards
-  ) {
-    // If it's the first turn or a different number of cards is played, any card(s) can be played
+  if (!lastCardPlayed) {
     return true;
   }
 
-  const lastCardsValue = calculateCardValue(lastCardsPlayed[0]);
-  const cardsValue = calculateCardValue(cards[0]);
+  const lastCardValue = calculateCardValue(lastCardPlayed);
 
-  if (cardsValue < lastCardsValue) {
-    return false;
-  }
-
-  if (
-    cards.length > 1 &&
-    cards.every((card) => calculateCardValue(card) === cardsValue)
-  ) {
-    const lastCardCount = game.cardsHistory.filter(
-      (item) => calculateCardValue(item.cardsPlayed[0]) === lastCardsValue
-    ).length;
-    const cardsCount = cards.filter(
-      (card) => calculateCardValue(card) === cardsValue
-    ).length;
-
-    if (cardsCount !== lastCardCount) {
+  for (let card of cards) {
+    if (calculateCardValue(card) < lastCardValue) {
       return false;
     }
   }
 
-  return true;
+  return (
+    numberOfCards === 1 ||
+    cards.every((card) => calculateCardValue(card) === lastCardValue)
+  );
 }
 
 // Function to clean the card table and add played cards to the discard pile
@@ -391,12 +488,12 @@ export function playCard(
     }
   }
 
-  const newGame: Game = {
+  let newGame: Game | null = {
     ...game,
     cardsHistory: [...game.cardsHistory],
     players: game.players.map((p) => ({
       ...p,
-      cards: [...p.cards],
+      cards: [...p.cards], // Créez une copie des cartes du joueur
     })),
   };
 
@@ -405,50 +502,40 @@ export function playCard(
       ? calculateCardValue(newGame.cardsHistory[0].cardsPlayed[0])
       : -1; // Set to -1 if no cards played yet
 
-  const cardsValue = calculateCardValue(cards[0]);
+  const cardsValues = cards.map((card) => calculateCardValue(card));
 
-  if (
-    cards.length > 1 &&
-    cards.every((card) => calculateCardValue(card) === cardsValue)
-  ) {
-    const lastCardCount = newGame.cardsHistory.filter(
-      (item) => calculateCardValue(item.cardsPlayed[0]) === currentCardValue
-    ).length;
-    const cardsCount = cards.filter(
-      (card) => calculateCardValue(card) === cardsValue
-    ).length;
-
-    if (cardsCount !== lastCardCount) {
-      return cleanCardTable(newGame); // Clean the table if the condition is not met
-    }
-  } else {
-    if (cardsValue < currentCardValue) {
-      return cleanCardTable(newGame); // Clean the table if the condition is not met
+  // Remove the played cards from the player's hand
+  const playerIndex = newGame.players.findIndex((p) => p.id === player.id);
+  for (const card of cards) {
+    const cardIndex = newGame.players[playerIndex].cards.findIndex(
+      (c) => c.type === card.type && c.value === card.value
+    );
+    if (cardIndex > -1) {
+      newGame.players[playerIndex].cards.splice(cardIndex, 1); // Retirez la carte du joueur
     }
   }
 
-  // Add a new entry for the current card played
-  newGame.cardsHistory.push({
+  // Add a new entry for the current cards played
+  newGame.cardsHistory.unshift({
     playerId: player.id,
     cardsPlayed: cards,
   });
 
-  player.cards = player.cards.filter((c) => !cards.includes(c));
-
-  if (player.cards.length === 1 && isPowerCard(player.cards[0])) {
-    console.log(`${player.id} has lost! They cannot finish with a power card.`);
-    // You can remove the losing player from the game if you want to.
-    // newGame.players = newGame.players.filter((p) => p !== player);
-  } else if (player.cards.length === 0) {
-    console.log(`${player.id} is the winner!`);
+  for (const card of cards) {
+    if (card.type === CardType.JOKER) {
+      newGame = cleanCardTable(newGame); // If any card is a JOKER, clean the table immediately
+      return {
+        ...newGame,
+        currentPlayer: game.currentPlayer,
+      };
+      break;
+    }
   }
 
-  // Set the next player as the currentPlayer
-  const currentPlayerIndex = newGame.players.findIndex(
-    (p) => p.id === newGame.currentPlayer.id
-  );
-  const nextPlayerIndex = (currentPlayerIndex + 1) % newGame.players.length;
-  newGame.currentPlayer = newGame.players[nextPlayerIndex];
+  // Update currentPlayer to the other player
+  newGame.currentPlayer = newGame.players.find(
+    (p) => p.id !== game.currentPlayer.id
+  )!;
 
   return newGame;
 }

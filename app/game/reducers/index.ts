@@ -18,7 +18,7 @@ export interface RootState {
 // Custom middleware to log actions to the console
 const loggerMiddleware: Middleware =
   (store) => (next) => (action: AnyAction) => {
-    console.log('Action:', action.type, action.payload);
+    // console.log('Action:', action.type, action.payload);
     return next(action);
   };
 

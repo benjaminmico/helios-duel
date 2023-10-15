@@ -195,8 +195,6 @@ export const computePossibleMoves = (game: MCTSGame): Array<MCTSMove> => {
   //     !hasOtherPlayerFinished || cards[0].type === CardType.ARTEMIS
   // );
 
-  console.log('DDDDDD', legalPlayMoves);
-
   // you can play any card at the beginning of the turn, but you can't skip
   if (game.currentPlayHistory.length === 0) {
     return legalPlayMoves;
@@ -515,7 +513,6 @@ export const displayMove = (move: MCTSMove): string => {
   }
   const cards = (move as MCTSMovePlayCard).cards;
 
-  console.log('AAAA66', cards.map(displayCard).join(','));
   return cards.map(displayCard).join(',');
 };
 

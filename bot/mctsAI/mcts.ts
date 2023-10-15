@@ -16,14 +16,6 @@ export const mctsAI: AIInterface<MCTSAIConfig> = (
   const mctsGame = mapGamePresidentDocumentToMctsGame(game);
   const { move: bestMove, tree } = mcts(mctsGame, config);
 
-  console.log(
-    `[game ${game.id}] Bot ${game.currentPlayer.id} - Playing ${displayMove(
-      bestMove
-    )} (${tree.numberOfWins} wins / ${
-      tree.numberOfWins + tree.numberOfLoses
-    } games)`
-  );
-
   if (bestMove.skip) {
     return [];
   }

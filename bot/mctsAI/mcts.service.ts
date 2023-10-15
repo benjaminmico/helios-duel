@@ -101,7 +101,6 @@ export const mcts = (
     backPropagate(isWin, history);
   }
 
-  console.log('MOVE', { move: computeBestMove(tree), tree });
   return { move: computeBestMove(tree), tree };
 };
 
