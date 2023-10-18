@@ -1,5 +1,5 @@
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Game } from '@/gameFunctions'; // Import the necessary types from gameFunctions
+import { Game } from 'gameFunctions'; // Import the necessary types from gameFunctions
 
 // Define the type for the navigation stack parameters
 export type RootStackParamList = {

@@ -1,4 +1,4 @@
-import { Card, CardType } from '@/gameFunctions';
+import { Card, CardType } from 'gameFunctions';
 import {
   MCTSGame,
   MCTSGameCard,

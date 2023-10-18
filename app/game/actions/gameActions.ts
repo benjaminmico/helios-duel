@@ -9,7 +9,7 @@ import {
   Game,
   Player,
   botAction,
-} from '@/gameFunctions';
+} from 'gameFunctions';
 import { RootState } from '../reducers';
 import { ThunkDispatch } from '@reduxjs/toolkit';
 

@@ -1,6 +1,6 @@
 // app/game/reducers/gameReducer.ts
 
-import { Game } from '@/gameFunctions';
+import { Game } from 'gameFunctions';
 import {
   GameAction,
   PLAY_CARD,

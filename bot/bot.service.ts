@@ -1,4 +1,4 @@
-import { Card, Game } from '@/gameFunctions';
+import { Card, Game } from 'gameFunctions';
 import { mctsAI } from './mctsAI/mcts';
 
 /**

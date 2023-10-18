@@ -1,14 +1,21 @@
 // app/game/screens/StartScreen.tsx
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  SafeAreaView,
+} from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { BotDifficulty, Player, deck, initializeGame } from '@/gameFunctions';
-import { startGame, playBotTurn } from './actions/gameActions';
+import { BotDifficulty, Player, deck, initializeGame } from 'gameFunctions';
 import { RouteProp, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '@/types/NavigationTypes';
+import { RootStackParamList } from 'types/NavigationTypes';
 import { router } from 'expo-router';
-import { RootState } from './reducers';
+import { RootState } from './game/reducers';
+import { startGame } from './game/actions/gameActions';
 
 type StartScreenRouteProp = RouteProp<RootStackParamList, 'start'>;
 type StartScreenNavigationProp = NavigationProp<RootStackParamList, 'start'>;
@@ -57,7 +64,7 @@ const StartScreen: React.FC<Props> = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.heading}>Welcome to the Card Game!</Text>
       <View style={styles.inputContainer}>
         <Text>Your Name:</Text>
@@ -72,7 +79,7 @@ const StartScreen: React.FC<Props> = () => {
         <Text>{botDifficulty}</Text>
       </View>
       <Button title='Start Game' onPress={handleStartGame} />
-    </View>
+    </SafeAreaView>
   );
 };
 

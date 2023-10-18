@@ -7,7 +7,7 @@ import {
 } from 'redux';
 import thunk, { ThunkMiddleware } from 'redux-thunk';
 import gameReducer from './gameReducer';
-import { Game } from '@/gameFunctions';
+import { Game } from 'gameFunctions';
 import { GameAction } from '../actions/gameActions';
 
 // Define the root state type

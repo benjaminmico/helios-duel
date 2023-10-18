@@ -1,4 +1,4 @@
-import { BotDifficulty, Card, CardHistory, Player } from '@/gameFunctions';
+import { BotDifficulty, Card, CardHistory, Player } from 'gameFunctions';
 
 export type MCTSGameCard = CardHistory[];
 export type MCTSGameDeck = Card[];

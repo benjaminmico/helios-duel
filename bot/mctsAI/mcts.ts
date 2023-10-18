@@ -6,7 +6,7 @@ import {
 } from './mcts.service';
 import { MCTSMovePlayCard } from './mcts.types';
 import { displayMove } from './mcts.utils';
-import { Card, Game } from '@/gameFunctions';
+import { Card, Game } from 'gameFunctions';
 
 export const mctsAI: AIInterface<MCTSAIConfig> = (
   game: Game,

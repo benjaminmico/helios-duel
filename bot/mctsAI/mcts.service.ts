@@ -6,7 +6,7 @@ import {
   computeWinner,
   simulatePlayAI,
 } from './mcts.utils';
-import { BotDifficulty, Card, Game } from '@/gameFunctions';
+import { BotDifficulty, Card, Game } from 'gameFunctions';
 
 export type MCTSAIConfig = {
   timeoutInMilisecond?: number;
