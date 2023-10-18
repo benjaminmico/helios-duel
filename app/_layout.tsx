@@ -1,58 +1,54 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useCallback } from 'react';
+import {
+  Text,
+  View,
+  StyleSheet,
+  useColorScheme,
+  SafeAreaView,
+} from 'react-native';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { SplashScreen, Stack } from 'expo-router';
-import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
-import { legacy_createStore as createStore, applyMiddleware } from 'redux';
-import rootReducer from './game/reducers';
+import { Stack } from 'expo-router';
 import { Provider } from 'react-redux';
-import thunk from 'redux-thunk';
 import store from './game/reducers';
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
-
-export const unstable_settings = {
-  initialRouteName: 'game/start',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
-  const [loaded, error] = useFonts({
+export default function App() {
+  const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    ...FontAwesome.font,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded || fontError) {
+      await SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [fontsLoaded, fontError]);
 
-  if (!loaded) {
+  if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
-    <Provider store={store}>
-      <RootLayoutNav />;
-    </Provider>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <Provider store={store}>
+        <RootLayoutNav />
+      </Provider>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
