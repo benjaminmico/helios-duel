@@ -399,7 +399,6 @@ export function canPlayCard(game: Game, player: Player, card: Card): boolean {
     ) {
       return true;
     }
-    console.log('BBBB');
     // Check if the card being played has the same length as the last cards
     if ([card].length < lastCardsPlayed.length) {
       return false;
@@ -452,6 +451,139 @@ export function canPlayMultipleCards(
   );
 }
 
+export function playCard(
+  game: Game,
+  player: Player,
+  cards: Card[]
+): Game | null {
+  if (game.currentPlayer !== player) {
+    return null;
+  }
+
+  for (const card of cards) {
+    if (!player.cards.includes(card)) {
+      return null;
+    }
+  }
+
+  let newGame = game;
+
+  // Remove the played cards from the player's hand
+  newGame = removePlayerCards(newGame, newGame.currentPlayer, cards);
+
+  // Add a new entry for the current cards played
+  newGame = addCardHistoryEntry(newGame, newGame.currentPlayer, cards);
+
+  for (const card of cards) {
+    if (card.type === CardType.JOKER) {
+      newGame = cleanCardTable(newGame); // If any card is a JOKER, clean the table immediately
+      return {
+        ...newGame,
+        currentPlayer: game.currentPlayer,
+      };
+      break;
+    }
+  }
+
+  newGame = handlePowerCards(newGame, cards);
+
+  return newGame;
+}
+
+export function playArtemis(
+  game: Game,
+  player: Player,
+  cardsToPass: Card[]
+): Game {
+  let newGame = game;
+
+  // Find the target player based on the provided player.id
+  const targetPlayer = game.players.find((p) => p.id !== player.id);
+
+  if (!targetPlayer) {
+    // Handle the case where the target player is not found (e.g., return the original game)
+    return newGame;
+  }
+
+  // Remove the card from the player's hand
+  newGame = removePlayerCards(newGame, player, cardsToPass);
+  // Add the card to the target player's hand
+  newGame = addCardsToPlayer(newGame, targetPlayer, cardsToPass);
+
+  console.log(`Artemis - cards gived to ${targetPlayer.id} through Artemis`);
+  newGame = changePlayerHand(newGame);
+
+  return newGame;
+}
+
+export function playHades(game: Game): Game {
+  let newGame = game;
+
+  // Find the target player based on the provided player.id
+  const targetPlayer = game.players.find(
+    (p) => p.id !== game.currentPlayer.id
+  ) as Player;
+
+  // If the target player has no cards, return false
+  if (targetPlayer.cards.length === 0) {
+    return game;
+  }
+
+  // Determine the best card of the target player
+  const bestCard = findBestCard(targetPlayer);
+
+  // Remove the best card from the target player's hand
+  newGame = removePlayerCards(newGame, targetPlayer, [bestCard]);
+
+  console.log(
+    `Hades - best card removed from ${targetPlayer.id}, ${bestCard}, ${game}, ${newGame}`
+  );
+
+  // Successful action
+  return newGame;
+}
+
+export function playHypnos(game: Game): Game {
+  let newGame = game;
+
+  // Find the target player based on the provided player.id
+  const targetPlayer = game.players.find(
+    (p) => p.id !== game.currentPlayer.id
+  ) as Player;
+
+  // Determine the best card of the target player
+  const bestCard = findBestCard(targetPlayer);
+
+  // Turn off best card
+  newGame = turnOffCard(game, targetPlayer, bestCard);
+  console.log(
+    `Hypnos - best card turned off from ${targetPlayer.id}`,
+    bestCard,
+    game,
+    newGame
+  );
+
+  return newGame;
+}
+
+export function isPowerCard(card: Card): boolean {
+  return [
+    CardType.JOKER,
+    CardType.HADES,
+    CardType.ARTEMIS,
+    CardType.HYPNOS,
+  ].includes(card.type);
+}
+
+export function isNormalCard(card: Card): boolean {
+  return (
+    card.type === CardType.NORMAL_HEARTS ||
+    card.type === CardType.NORMAL_DIAMONDS ||
+    card.type === CardType.NORMAL_CLUBS ||
+    card.type === CardType.NORMAL_SPADES
+  );
+}
+
 // Function to clean the card table and add played cards to the discard pile
 export function cleanCardTable(game: Game): Game {
   // Move the played cards to the discard pile
@@ -473,108 +605,105 @@ export function cleanCardTable(game: Game): Game {
   return game;
 }
 
-export function playCard(
-  game: Game,
-  player: Player,
-  cards: Card[]
-): Game | null {
-  if (game.currentPlayer !== player) {
-    return null;
-  }
+function findPlayerIndex(game: Game, player: Player): number {
+  return game.players.findIndex((p) => p.id === player.id);
+}
 
-  for (const card of cards) {
-    if (!player.cards.includes(card)) {
-      return null;
-    }
-  }
+function changePlayerHand(game: Game): Game {
+  const newGame = { ...game };
+  newGame.currentPlayer = newGame.players.find(
+    (p) => p.id !== game.currentPlayer.id
+  )!;
+  return newGame;
+}
 
-  let newGame: Game | null = {
-    ...game,
-    cardsHistory: [...game.cardsHistory],
-    players: game.players.map((p) => ({
-      ...p,
-      cards: [...p.cards], // Créez une copie des cartes du joueur
-    })),
-  };
+function removePlayerCards(game: Game, player: Player, cards: Card[]): Game {
+  const newGame = game;
+  // Find the index of the player
+  const playerIndex = findPlayerIndex(newGame, player);
 
-  const currentCardValue =
-    newGame.cardsHistory.length > 0
-      ? calculateCardValue(newGame.cardsHistory[0].cardsPlayed[0])
-      : -1; // Set to -1 if no cards played yet
+  // If the player is not found, exit the function
+  if (playerIndex === -1) return newGame;
 
-  const cardsValues = cards.map((card) => calculateCardValue(card));
-
-  // Remove the played cards from the player's hand
-  const playerIndex = newGame.players.findIndex((p) => p.id === player.id);
   for (const card of cards) {
     const cardIndex = newGame.players[playerIndex].cards.findIndex(
       (c) => c.type === card.type && c.value === card.value
     );
     if (cardIndex > -1) {
-      newGame.players[playerIndex].cards.splice(cardIndex, 1); // Retirez la carte du joueur
+      newGame.players[playerIndex].cards.splice(cardIndex, 1);
     }
   }
-
-  // Add a new entry for the current cards played
-  newGame.cardsHistory.unshift({
-    playerId: player.id,
-    cardsPlayed: cards,
-  });
-
-  for (const card of cards) {
-    if (card.type === CardType.JOKER) {
-      newGame = cleanCardTable(newGame); // If any card is a JOKER, clean the table immediately
-      return {
-        ...newGame,
-        currentPlayer: game.currentPlayer,
-      };
-      break;
-    }
-  }
-
-  // Update currentPlayer to the other player
-  newGame.currentPlayer = newGame.players.find(
-    (p) => p.id !== game.currentPlayer.id
-  )!;
 
   return newGame;
 }
 
-export function playArtemis(
-  game: Game,
-  player: Player,
-  targetPlayer: Player,
-  cardToPass: Card
-): boolean {
-  // Check if the player has the card to pass
-  if (!player.cards.includes(cardToPass)) {
-    return false;
-  }
+function addCardsToPlayer(game: Game, player: Player, cards: Card[]): Game {
+  const newGame = game;
+  const playerIndex = findPlayerIndex(newGame, player);
 
-  // Remove the card from the player's hand
-  player.cards = player.cards.filter((card) => card !== cardToPass);
+  // If the player is not found, exit the function
+  if (playerIndex === -1) return newGame;
 
-  // Add the card to the target player's hand
-  targetPlayer.cards.push(cardToPass);
+  // Add cards to the player's hand
+  newGame.players[playerIndex].cards.push(...cards);
 
-  // Successful action
-  return true;
+  return newGame;
 }
 
-export function playHades(
-  game: Game,
-  player: Player,
-  targetPlayer: Player
-): boolean {
-  // If the target player has no cards, return false
-  if (targetPlayer.cards.length === 0) {
-    return false;
-  }
+function addCardHistoryEntry(game: Game, player: Player, cards: Card[]): Game {
+  const newGame = { ...game }; // Shallow copy (be aware of nested objects)
 
-  // Determine the best card of the target player
-  let bestCard = targetPlayer.cards[0];
+  const newEntry = {
+    playerId: player.id,
+    cardsPlayed: cards,
+  };
+
+  newGame.cardsHistory.unshift(newEntry);
+
+  return newGame;
+}
+
+function handlePowerCards(game: Game, cards: Card[]): Game {
+  let newGame = game;
+  for (const card of cards) {
+    switch (card.type) {
+      case CardType.JOKER: {
+        newGame = cleanCardTable(newGame);
+        return {
+          ...newGame,
+          currentPlayer: game.currentPlayer,
+        };
+      }
+
+      case CardType.ARTEMIS: {
+        newGame = playHades(newGame);
+
+        return newGame;
+      }
+      case CardType.HADES: {
+        newGame = playHades(newGame);
+        newGame = changePlayerHand(newGame);
+        return newGame;
+      }
+      case CardType.HYPNOS: {
+        newGame = playHypnos(newGame);
+        newGame = changePlayerHand(newGame);
+        return newGame;
+      }
+      default: {
+        newGame = changePlayerHand(newGame);
+        return newGame;
+      }
+    }
+  }
+  return newGame;
+}
+
+function findBestCard(player: Player): Card {
+  let bestCard = player.cards[0];
   let bestCardValue = calculateCardValue(bestCard);
-  for (let card of targetPlayer.cards) {
+
+  for (let card of player.cards) {
     const cardValue = calculateCardValue(card);
     if (cardValue > bestCardValue) {
       bestCard = card;
@@ -582,86 +711,40 @@ export function playHades(
     }
   }
 
-  // Remove the best card from the target player's hand
-  targetPlayer.cards = targetPlayer.cards.filter((card) => card !== bestCard);
-
-  // If the target player has no more cards, they are eliminated
-  if (targetPlayer.cards.length === 0) {
-    game.players = game.players.filter((p) => p !== targetPlayer);
-  }
-
-  // Successful action
-  return true;
+  return bestCard;
 }
 
-export function playHypnos(
-  game: Game,
-  player: Player,
-  targetPlayer: Player
-): boolean {
-  // If the target player has no cards, return false
-  if (targetPlayer.cards.length === 0) {
-    return false;
-  }
+function turnOffCard(game: Game, player: Player, targetCard: Card): Game {
+  const newGame = { ...game };
+  const playerIndex = findPlayerIndex(newGame, player);
 
-  // Determine the best card of the target player
-  let bestCard = targetPlayer.cards[0];
-  let bestCardValue = calculateCardValue(bestCard);
+  // If the player is not found, exit the function
+  if (playerIndex === -1) return newGame;
 
-  for (let card of targetPlayer.cards) {
-    const cardValue = calculateCardValue(card);
-    if (cardValue > bestCardValue) {
-      bestCard = card;
-      bestCardValue = cardValue;
+  // Find the card and set isTurnedOff to true
+  for (let card of newGame.players[playerIndex].cards) {
+    if (card.type === targetCard.type && card.value === targetCard.value) {
+      card.position = 2;
+      card.isTurnedOff = true;
+      break; // Exit the loop once the card is found and modified
     }
   }
 
-  // Extinguish the best card by turning it into a '2'
-  bestCard.type =
-    CardType.NORMAL_HEARTS ||
-    CardType.NORMAL_DIAMONDS ||
-    CardType.NORMAL_CLUBS ||
-    CardType.NORMAL_SPADES;
-  // bestCard.value = '2';
-  bestCard.isTurnedOff = true;
-  // Successful action
-  return true;
+  return newGame;
 }
 
-export function playJoker(game: Game, player: Player): boolean {
-  // Check if the player has a JOKER card
-  const jokerCard = player.cards.find((card) => card.type === CardType.JOKER);
-  if (!jokerCard) {
-    return false;
+export function isLastCardArtemis(game: Game): boolean {
+  const lastCardHistory = game.cardsHistory[0];
+
+  if (!lastCardHistory || lastCardHistory.cardsPlayed.length === 0) {
+    return false; // No cards played in the last history or no history available
   }
 
-  // Remove the JOKER card from the player's hand
-  player.cards = player.cards.filter((card) => card !== jokerCard);
+  const lastPlayedCard = lastCardHistory.cardsPlayed[0];
 
-  // The player becomes the current player and starts a new round
-  game.currentPlayer = player;
-  game.discardPile = game.cardsHistory?.length
-    ? game.cardsHistory.map((cardHistory) => cardHistory.cardsPlayed).flat()
-    : [];
-  game.cardsHistory = [];
-  // Successful action
-  return true;
+  return lastPlayedCard.type === CardType.ARTEMIS;
 }
 
-export function isPowerCard(card: Card): boolean {
-  return [
-    CardType.JOKER,
-    CardType.HADES,
-    CardType.ARTEMIS,
-    CardType.HYPNOS,
-  ].includes(card.type);
-}
-
-export function isNormalCard(card: Card): boolean {
-  return (
-    card.type === CardType.NORMAL_HEARTS ||
-    card.type === CardType.NORMAL_DIAMONDS ||
-    card.type === CardType.NORMAL_CLUBS ||
-    card.type === CardType.NORMAL_SPADES
-  );
+export function hasArtemisCard(player: Player): boolean {
+  return player.cards.some((card) => card.type === CardType.ARTEMIS);
 }

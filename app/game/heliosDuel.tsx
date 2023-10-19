@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,16 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from './reducers';
-import { actionPlayCard } from './actions/gameActions';
+import { actionPlayGame } from './actions/gameActions';
 import {
   Card,
   Player,
   canPlayCard,
+  isLastCardArtemis,
+  playArtemis,
   playCard,
+  playHades,
+  playHypnos,
   rollDiceAndSkipTurn,
 } from 'gameFunctions';
 import { getBotCards } from 'bot/bot.service';
@@ -24,6 +28,13 @@ const GameScreen: React.FC = () => {
   const dispatch = useDispatch();
   const game = useSelector((state: RootState) => state.game);
   const [selectedCards, setSelectedCards] = React.useState<Card[]>([]);
+  const [selectedArtemisCard, setSelectedArtemisCard] =
+    React.useState<Card | null>(null);
+
+  const handleSelectArtemisCard = (card: Card) => {
+    setSelectedArtemisCard(card);
+  };
+
   const [lastCardPlayedCount, setLastCardPlayedCount] = useState<number>(0);
 
   const handlePlayCard = (card: Card) => {
@@ -41,17 +52,31 @@ const GameScreen: React.FC = () => {
   const handleSkipTurn = () => {
     const newGame = rollDiceAndSkipTurn(game);
     if (newGame) {
-      dispatch(actionPlayCard(newGame));
+      dispatch(actionPlayGame(newGame));
     }
     setSelectedCards([]);
     setLastCardPlayedCount(0);
+  };
+
+  const handlePlayArtemis = () => {
+    if (selectedArtemisCard) {
+      const newGame = playArtemis(game, game.currentPlayer, [
+        selectedArtemisCard,
+      ]);
+      if (newGame) {
+        dispatch(actionPlayGame(newGame));
+      }
+      setSelectedArtemisCard(null); // Reset selected card after playing Artemis
+      setSelectedCards([]); // Reset selected cards
+      setLastCardPlayedCount(0);
+    }
   };
 
   const playSelectedCards = (playedCards: Card[]) => {
     if (playedCards.length >= 1) {
       const newGame = playCard(game, game.currentPlayer, playedCards);
       if (newGame) {
-        dispatch(actionPlayCard(newGame));
+        dispatch(actionPlayGame(newGame));
       }
       setSelectedCards([]);
       setLastCardPlayedCount(0);
@@ -84,8 +109,11 @@ const GameScreen: React.FC = () => {
   const isButtonDisabled =
     selectedCards?.length < lastCardPlayedCount || selectedCards.length === 0;
 
-  const renderGameCard = ({ item, index }: { item: any; index: number }) => (
-    <Text key={index}>{JSON.stringify(item)}</Text>
+  const renderGameCard = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <Text key={index}>{JSON.stringify(item)}</Text>
+    ),
+    []
   );
 
   const renderSortedCard = ({ item, index }: { item: Card; index: number }) => {
@@ -109,6 +137,12 @@ const GameScreen: React.FC = () => {
 
   const currentPlayerCards =
     game.players.find((player) => player.id !== 'bot')?.cards || [];
+  const currentBotCards =
+    game.players.find((player) => player.id === 'bot')?.cards || [];
+
+  const sortedBotCards = [...currentBotCards].sort(
+    (a, b) => a.position - b.position
+  );
   const sortedCards = [...currentPlayerCards].sort(
     (a, b) => a.position - b.position
   );
@@ -117,6 +151,42 @@ const GameScreen: React.FC = () => {
     cardsPlayed: card.cardsPlayed.map((c) => c.value),
   }));
 
+  function renderSelectCardToGiveSection() {
+    if (game.currentPlayer.id !== 'bot') {
+      return (
+        <View>
+          <Text>Select a card to give to another player:</Text>
+          {currentPlayerCards.map((card, index) => (
+            <Pressable
+              key={`artemisCard_${index}_${card.type}_${card.value}`}
+              onPress={() => handleSelectArtemisCard(card)}
+              disabled={selectedArtemisCard !== null}
+              style={[
+                styles.cardButton,
+                {
+                  backgroundColor:
+                    selectedArtemisCard === card ? 'green' : 'black',
+                  opacity: selectedArtemisCard === null ? 1.0 : 0.3,
+                },
+              ]}
+            >
+              <Text style={styles.cardButtonText}>{card.value.toString()}</Text>
+            </Pressable>
+          ))}
+          {selectedArtemisCard && (
+            <Button
+              title={`Play Artemis on ${selectedArtemisCard.value}`}
+              onPress={handlePlayArtemis}
+            />
+          )}
+        </View>
+      );
+    } else {
+      return null;
+    }
+  }
+
+  // Inside your main render function:
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.heading}>Card Game</Text>
@@ -131,15 +201,29 @@ const GameScreen: React.FC = () => {
       </View>
       <FlatList
         showsHorizontalScrollIndicator={false}
-        data={sortedCards}
+        data={sortedBotCards}
         renderItem={renderSortedCard}
         keyExtractor={(item, index) => `sortedCard_${index}`}
         horizontal
         style={styles.buttonContainer}
       />
-      <Pressable onPress={handleSkipTurn} style={styles.skipButton}>
-        <Text style={styles.cardButtonText}>Skip turn</Text>
-      </Pressable>
+      <FlatList
+        showsHorizontalScrollIndicator={false}
+        data={sortedCards}
+        renderItem={renderSortedCard}
+        keyExtractor={(item, index) => `sortedCard_${index}`}
+        ListFooterComponent={() => {
+          return (
+            <Pressable onPress={handleSkipTurn} style={styles.skipButton}>
+              <Text style={styles.cardButtonText}>Skip turn</Text>
+            </Pressable>
+          );
+        }}
+        horizontal
+        style={styles.buttonContainer}
+      />
+
+      {isLastCardArtemis(game) && renderSelectCardToGiveSection()}
 
       <Button
         title='Play Selected Cards'

@@ -75,7 +75,7 @@ export const startGame = (game: Game): StartGameAction => ({
   payload: game,
 });
 
-export const actionPlayCard = (game: Game): PlayCardAction => ({
+export const actionPlayGame = (game: Game): PlayCardAction => ({
   type: PLAY_CARD,
   payload: game,
 });
