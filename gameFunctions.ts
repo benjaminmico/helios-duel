@@ -382,8 +382,6 @@ export function canPlayCard(game: Game, player: Player, card: Card): boolean {
     return false;
   }
 
-  console.log('lastCardsPlayed', lastCardsPlayed);
-
   // if (
   //   lastCardsPlayed.length > 1 &&
   //   lastCardsPlayed[0].position === lastCardsPlayed[1].position
@@ -409,7 +407,6 @@ export function canPlayCard(game: Game, player: Player, card: Card): boolean {
       return false;
     }
   } else if (card.position >= lastCardsPlayed[0].position) {
-    console.log('heuiehriu');
     return true;
   }
 
@@ -676,8 +673,6 @@ function handlePowerCards(game: Game, cards: Card[]): Game {
       }
 
       case CardType.ARTEMIS: {
-        newGame = playHades(newGame);
-
         return newGame;
       }
       case CardType.HADES: {
@@ -747,4 +742,24 @@ export function isLastCardArtemis(game: Game): boolean {
 
 export function hasArtemisCard(player: Player): boolean {
   return player.cards.some((card) => card.type === CardType.ARTEMIS);
+}
+
+export function getWeakestCard(player: Player): Card | null {
+  if (player.cards.length === 0) {
+    return null; // Player has no cards
+  }
+
+  let weakestCard: Card | null = null;
+  let weakestValue: number | null = null;
+
+  for (const card of player.cards) {
+    const cardValue = calculateCardValue(card);
+
+    if (weakestCard === null || cardValue < weakestValue!) {
+      weakestCard = card;
+      weakestValue = cardValue;
+    }
+  }
+
+  return weakestCard;
 }

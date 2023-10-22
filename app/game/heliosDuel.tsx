@@ -15,6 +15,7 @@ import {
   Card,
   Player,
   canPlayCard,
+  getWeakestCard,
   isLastCardArtemis,
   playArtemis,
   playCard,
@@ -27,6 +28,7 @@ import { getBotCards } from 'bot/bot.service';
 const GameScreen: React.FC = () => {
   const dispatch = useDispatch();
   const game = useSelector((state: RootState) => state.game);
+  console.log({ game });
   const [selectedCards, setSelectedCards] = React.useState<Card[]>([]);
   const [selectedArtemisCard, setSelectedArtemisCard] =
     React.useState<Card | null>(null);
@@ -91,7 +93,22 @@ const GameScreen: React.FC = () => {
         handleSkipTurn();
         return;
       }
+
       playSelectedCards(botCards);
+      // Check if the bot has just played Artemis on the weakest card
+      if (isLastCardArtemis(game)) {
+        console.log('bot plays artemis');
+        const weakestCard = getWeakestCard(currentPlayer); // Assuming you have a function to get the weakest card
+        console.log('weakestCard', weakestCard);
+
+        if (weakestCard) {
+          const artemisPlay = playArtemis(game, currentPlayer, [weakestCard]);
+          if (artemisPlay) {
+            dispatch(actionPlayGame(artemisPlay));
+            return;
+          }
+        }
+      }
     }
   };
 
@@ -191,6 +208,14 @@ const GameScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <Text style={styles.heading}>Card Game</Text>
       <View>
+        <FlatList
+          showsHorizontalScrollIndicator={false}
+          data={sortedBotCards}
+          renderItem={renderSortedCard}
+          keyExtractor={(item, index) => `sortedCard_${index}`}
+          horizontal
+          style={styles.buttonContainer}
+        />
         <Text>Current Player: {game.currentPlayer.id}</Text>
         <Text>Cards Played: </Text>
         <FlatList
@@ -199,14 +224,6 @@ const GameScreen: React.FC = () => {
           keyExtractor={(item, index) => `gameCard_${index}`}
         />
       </View>
-      <FlatList
-        showsHorizontalScrollIndicator={false}
-        data={sortedBotCards}
-        renderItem={renderSortedCard}
-        keyExtractor={(item, index) => `sortedCard_${index}`}
-        horizontal
-        style={styles.buttonContainer}
-      />
       <FlatList
         showsHorizontalScrollIndicator={false}
         data={sortedCards}
@@ -267,4 +284,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default GameScreen;
+export default React.memo(GameScreen);
