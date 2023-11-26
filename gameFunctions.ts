@@ -170,30 +170,16 @@ for (const suit of suits) {
 const specialCards: Card[] = [
   {
     id: uuidv4(),
-    type: CardType.JOKER,
-    value: 'JOKER',
-    position: 18,
+    type: CardType.ARTEMIS,
+    value: 'ARTEMIS',
+    position: 16,
     isTurnedOff: false,
   },
   {
     id: uuidv4(),
-    type: CardType.JOKER,
-    value: 'JOKER',
-    position: 18,
-    isTurnedOff: false,
-  },
-  {
-    id: uuidv4(),
-    type: CardType.HADES,
-    value: 'HADES',
-    position: 17,
-    isTurnedOff: false,
-  },
-  {
-    id: uuidv4(),
-    type: CardType.HADES,
-    value: 'HADES',
-    position: 17,
+    type: CardType.ARTEMIS,
+    value: 'ARTEMIS',
+    position: 16,
     isTurnedOff: false,
   },
   {
@@ -212,9 +198,16 @@ const specialCards: Card[] = [
   },
   {
     id: uuidv4(),
-    type: CardType.HYPNOS,
-    value: 'HYPNOS',
-    position: 15,
+    type: CardType.ARTEMIS,
+    value: 'ARTEMIS',
+    position: 16,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.ARTEMIS,
+    value: 'ARTEMIS',
+    position: 16,
     isTurnedOff: false,
   },
   {
@@ -331,6 +324,7 @@ export function skipTurn(game: Game, currentPlayer: Player): Game {
     (player) => player.id !== currentPlayer.id
   )!;
 
+  console.log(`${currentPlayer.id} skip turn`);
   return game;
 }
 
@@ -381,13 +375,6 @@ export function canPlayCard(game: Game, player: Player, card: Card): boolean {
   if (!player.cards.includes(card)) {
     return false;
   }
-
-  // if (
-  //   lastCardsPlayed.length > 1 &&
-  //   lastCardsPlayed[0].position === lastCardsPlayed[1].position
-  // ) {
-  //   return false;
-  // }
 
   // New Logic for the case you mentioned
   if (lastCardsPlayed.length > 1) {
@@ -482,6 +469,9 @@ export function playCard(
     }
   }
 
+  console.log(
+    `${player.id} play ${JSON.stringify(cards.map((card) => card.value))}`
+  );
   newGame = handlePowerCards(newGame, cards);
 
   return newGame;
@@ -502,12 +492,18 @@ export function playArtemis(
     return newGame;
   }
 
+  console.log('player ids', player.id, targetPlayer.id);
+
   // Remove the card from the player's hand
   newGame = removePlayerCards(newGame, player, cardsToPass);
   // Add the card to the target player's hand
   newGame = addCardsToPlayer(newGame, targetPlayer, cardsToPass);
 
-  console.log(`Artemis - cards gived to ${targetPlayer.id} through Artemis`);
+  console.log(
+    `Artemis - ${JSON.stringify(
+      cardsToPass.map((card) => card.value)
+    )} gived to ${targetPlayer.id} through Artemis`
+  );
   newGame = changePlayerHand(newGame);
 
   return newGame;
@@ -554,7 +550,7 @@ export function playHypnos(game: Game): Game {
   // Turn off best card
   newGame = turnOffCard(game, targetPlayer, bestCard);
   console.log(
-    `Hypnos - best card turned off from ${targetPlayer.id}`,
+    `Hypnos - ${bestCard.value} turned off from ${targetPlayer.id}`,
     bestCard,
     game,
     newGame
@@ -642,6 +638,7 @@ function addCardsToPlayer(game: Game, player: Player, cards: Card[]): Game {
   if (playerIndex === -1) return newGame;
 
   // Add cards to the player's hand
+  console.log('add cards to player');
   newGame.players[playerIndex].cards.push(...cards);
 
   return newGame;

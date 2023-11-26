@@ -23,8 +23,6 @@ export const getBotCards = async (
     (card) => card !== undefined || card !== null
   );
 
-  console.log('ccc', cards);
-
   return cards;
 
   // if (cards.length === 0) {

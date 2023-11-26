@@ -13,7 +13,9 @@ import { RootState } from './reducers';
 import { actionPlayGame } from './actions/gameActions';
 import {
   Card,
+  CardType,
   Player,
+  calculateCardValue,
   canPlayCard,
   getWeakestCard,
   isLastCardArtemis,
@@ -28,49 +30,103 @@ import { getBotCards } from 'bot/bot.service';
 const GameScreen: React.FC = () => {
   const dispatch = useDispatch();
   const game = useSelector((state: RootState) => state.game);
-  console.log({ game });
+
   const [selectedCards, setSelectedCards] = React.useState<Card[]>([]);
-  const [selectedArtemisCard, setSelectedArtemisCard] =
-    React.useState<Card | null>(null);
+  const [selectedArtemisCards, setSelectedArtemisCards] = React.useState<
+    Card[]
+  >([]);
 
   const handleSelectArtemisCard = (card: Card) => {
-    setSelectedArtemisCard(card);
-  };
+    console.log('onPress');
+    const lastCardPlayedCount =
+      (game.cardsHistory?.length &&
+        game.cardsHistory[0]?.cardsPlayed?.length) ||
+      undefined;
 
-  const [lastCardPlayedCount, setLastCardPlayedCount] = useState<number>(0);
-
-  const handlePlayCard = (card: Card) => {
-    if (isCardAlreadySelected(card)) {
-      const updatedSelectedCards = selectedCards.filter(
-        (selectedCard) =>
-          selectedCard.type !== card.type || selectedCard.value !== card.value
+    // Check if the card is already selected
+    if (
+      selectedArtemisCards.some((selectedCard) => selectedCard.id === card.id)
+    ) {
+      // Card is already selected, so remove it from the selection
+      const updatedSelectedArtemisCards = selectedArtemisCards.filter(
+        (selectedCard) => selectedCard.id !== card.id
       );
-      setSelectedCards(updatedSelectedCards);
+      setSelectedArtemisCards(updatedSelectedArtemisCards);
     } else {
-      setSelectedCards([...selectedCards, card]);
+      if (!lastCardPlayedCount) return;
+      // Card is not selected, so add it to the selection
+      if (selectedArtemisCards.length < lastCardPlayedCount) {
+        setSelectedArtemisCards([...selectedArtemisCards, card]);
+      } else {
+        console.log(
+          'Cannot select more Artemis cards than the number of cards played in the last turn'
+        );
+      }
     }
   };
 
+  const handlePlayCard = (card: Card) => {
+    const lastCardPlayedCount =
+      (game.cardsHistory?.length &&
+        game.cardsHistory[0]?.cardsPlayed?.length) ||
+      undefined;
+
+    if (isCardAlreadySelected(card)) {
+      const updatedSelectedCards = selectedCards.filter(
+        (selectedCard) => selectedCard.id !== card.id
+      );
+      setSelectedCards(updatedSelectedCards);
+      return;
+    }
+
+    // Check if there are already selected cards
+    if (selectedCards.length > 0) {
+      // Get the value of the first selected card
+      const firstSelectedCardValue = selectedCards[0].value;
+
+      // Only allow selecting cards with the same value
+      if (card.value !== firstSelectedCardValue) {
+        console.log(
+          'Cannot select this card. Only cards with value',
+          firstSelectedCardValue,
+          'can be selected.'
+        );
+        return;
+      }
+
+      // Check if the number of selected cards is already equal to the number of cards played by the last player
+      if (lastCardPlayedCount && selectedCards.length >= lastCardPlayedCount) {
+        console.log(
+          'Cannot select more cards. You can only play',
+          lastCardPlayedCount,
+          'cards.'
+        );
+        return;
+      }
+    }
+
+    setSelectedCards([...selectedCards, card]);
+  };
   const handleSkipTurn = () => {
     const newGame = rollDiceAndSkipTurn(game);
     if (newGame) {
       dispatch(actionPlayGame(newGame));
     }
     setSelectedCards([]);
-    setLastCardPlayedCount(0);
   };
 
   const handlePlayArtemis = () => {
-    if (selectedArtemisCard) {
-      const newGame = playArtemis(game, game.currentPlayer, [
-        selectedArtemisCard,
-      ]);
+    if (selectedArtemisCards.length > 0) {
+      const newGame = playArtemis(
+        game,
+        game.currentPlayer,
+        selectedArtemisCards
+      );
       if (newGame) {
         dispatch(actionPlayGame(newGame));
       }
-      setSelectedArtemisCard(null); // Reset selected card after playing Artemis
+      setSelectedArtemisCards([]); // Reset selected Artemis cards
       setSelectedCards([]); // Reset selected cards
-      setLastCardPlayedCount(0);
     }
   };
 
@@ -81,7 +137,6 @@ const GameScreen: React.FC = () => {
         dispatch(actionPlayGame(newGame));
       }
       setSelectedCards([]);
-      setLastCardPlayedCount(0);
     }
   };
 
@@ -95,20 +150,20 @@ const GameScreen: React.FC = () => {
       }
 
       playSelectedCards(botCards);
-      // Check if the bot has just played Artemis on the weakest card
-      if (isLastCardArtemis(game)) {
-        console.log('bot plays artemis');
-        const weakestCard = getWeakestCard(currentPlayer); // Assuming you have a function to get the weakest card
-        console.log('weakestCard', weakestCard);
 
-        if (weakestCard) {
-          const artemisPlay = playArtemis(game, currentPlayer, [weakestCard]);
-          if (artemisPlay) {
-            dispatch(actionPlayGame(artemisPlay));
-            return;
+      // Check for each Artemis card played by the bot
+      botCards.forEach(async (card) => {
+        if (card.type === CardType.ARTEMIS) {
+          const weakestCard = getWeakestCard(currentPlayer); // Get the weakest card for each Artemis
+
+          if (weakestCard) {
+            const artemisPlay = playArtemis(game, currentPlayer, [weakestCard]);
+            if (artemisPlay) {
+              dispatch(actionPlayGame(artemisPlay));
+            }
           }
         }
-      }
+      });
     }
   };
 
@@ -117,14 +172,10 @@ const GameScreen: React.FC = () => {
   }, [game.currentPlayer.id]);
 
   const isCardAlreadySelected = (card: Card) => {
-    return selectedCards.some(
-      (selectedCard) =>
-        selectedCard.type === card.type && selectedCard.value === card.value
-    );
+    return selectedCards.some((selectedCard) => selectedCard.id === card.id);
   };
 
-  const isButtonDisabled =
-    selectedCards?.length < lastCardPlayedCount || selectedCards.length === 0;
+  const isButtonDisabled = selectedCards.length === 0;
 
   const renderGameCard = useCallback(
     ({ item, index }: { item: any; index: number }) => (
@@ -169,30 +220,36 @@ const GameScreen: React.FC = () => {
   }));
 
   function renderSelectCardToGiveSection() {
-    if (game.currentPlayer.id !== 'bot') {
+    if (game.currentPlayer.id !== 'bot') return;
+    if (isLastCardArtemis(game)) {
+      // Sort cards from weakest to highest
+      const sortedCards = currentPlayerCards
+        .slice()
+        .sort((a, b) => calculateCardValue(a) - calculateCardValue(b));
+
       return (
         <View>
-          <Text>Select a card to give to another player:</Text>
-          {currentPlayerCards.map((card, index) => (
+          <Text>Select cards to give to another player:</Text>
+          {sortedCards.map((card, index) => (
             <Pressable
               key={`artemisCard_${index}_${card.type}_${card.value}`}
               onPress={() => handleSelectArtemisCard(card)}
-              disabled={selectedArtemisCard !== null}
               style={[
                 styles.cardButton,
                 {
-                  backgroundColor:
-                    selectedArtemisCard === card ? 'green' : 'black',
-                  opacity: selectedArtemisCard === null ? 1.0 : 0.3,
+                  backgroundColor: selectedArtemisCards.includes(card)
+                    ? 'green'
+                    : 'black',
+                  opacity: selectedArtemisCards.includes(card) ? 0.3 : 1.0,
                 },
               ]}
             >
               <Text style={styles.cardButtonText}>{card.value.toString()}</Text>
             </Pressable>
           ))}
-          {selectedArtemisCard && (
+          {selectedArtemisCards.length > 0 && (
             <Button
-              title={`Play Artemis on ${selectedArtemisCard.value}`}
+              title={`Play Artemis on selected cards`}
               onPress={handlePlayArtemis}
             />
           )}
@@ -240,7 +297,7 @@ const GameScreen: React.FC = () => {
         style={styles.buttonContainer}
       />
 
-      {isLastCardArtemis(game) && renderSelectCardToGiveSection()}
+      {renderSelectCardToGiveSection()}
 
       <Button
         title='Play Selected Cards'
