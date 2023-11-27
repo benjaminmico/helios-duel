@@ -43,6 +43,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@types/lodash": "^4.14.202",
     "@types/react": "~18.2.14",
     "@types/uuid": "^9.0.2",
     "jest": "^29.2.1",

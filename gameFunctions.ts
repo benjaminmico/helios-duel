@@ -602,7 +602,7 @@ function findPlayerIndex(game: Game, player: Player): number {
   return game.players.findIndex((p) => p.id === player.id);
 }
 
-function changePlayerHand(game: Game): Game {
+export function changePlayerHand(game: Game): Game {
   const newGame = { ...game };
   newGame.currentPlayer = newGame.players.find(
     (p) => p.id !== game.currentPlayer.id

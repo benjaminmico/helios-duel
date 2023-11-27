@@ -17,6 +17,7 @@ import {
   Player,
   calculateCardValue,
   canPlayCard,
+  changePlayerHand,
   getWeakestCard,
   isLastCardArtemis,
   playArtemis,
@@ -26,6 +27,8 @@ import {
   rollDiceAndSkipTurn,
 } from 'gameFunctions';
 import { getBotCards } from 'bot/bot.service';
+import _ from 'lodash';
+import * as handlers from './handlers';
 
 const GameScreen: React.FC = () => {
   const dispatch = useDispatch();
@@ -36,146 +39,110 @@ const GameScreen: React.FC = () => {
     Card[]
   >([]);
 
-  const handleSelectArtemisCard = (card: Card) => {
-    console.log('onPress');
-    const lastCardPlayedCount =
-      (game.cardsHistory?.length &&
-        game.cardsHistory[0]?.cardsPlayed?.length) ||
-      undefined;
+  const [shouldDisplayArtemisSelection, setShouldDisplayArtemisSelection] =
+    useState<boolean>(false);
 
-    // Check if the card is already selected
-    if (
-      selectedArtemisCards.some((selectedCard) => selectedCard.id === card.id)
-    ) {
-      // Card is already selected, so remove it from the selection
-      const updatedSelectedArtemisCards = selectedArtemisCards.filter(
-        (selectedCard) => selectedCard.id !== card.id
-      );
-      setSelectedArtemisCards(updatedSelectedArtemisCards);
-    } else {
-      if (!lastCardPlayedCount) return;
-      // Card is not selected, so add it to the selection
-      if (selectedArtemisCards.length < lastCardPlayedCount) {
-        setSelectedArtemisCards([...selectedArtemisCards, card]);
-      } else {
-        console.log(
-          'Cannot select more Artemis cards than the number of cards played in the last turn'
-        );
-      }
-    }
-  };
+  const { currentPlayer, players, cardsHistory } = game;
 
-  const handlePlayCard = (card: Card) => {
-    const lastCardPlayedCount =
-      (game.cardsHistory?.length &&
-        game.cardsHistory[0]?.cardsPlayed?.length) ||
-      undefined;
-
-    if (isCardAlreadySelected(card)) {
-      const updatedSelectedCards = selectedCards.filter(
-        (selectedCard) => selectedCard.id !== card.id
-      );
-      setSelectedCards(updatedSelectedCards);
-      return;
-    }
-
-    // Check if there are already selected cards
-    if (selectedCards.length > 0) {
-      // Get the value of the first selected card
-      const firstSelectedCardValue = selectedCards[0].value;
-
-      // Only allow selecting cards with the same value
-      if (card.value !== firstSelectedCardValue) {
-        console.log(
-          'Cannot select this card. Only cards with value',
-          firstSelectedCardValue,
-          'can be selected.'
-        );
-        return;
-      }
-
-      // Check if the number of selected cards is already equal to the number of cards played by the last player
-      if (lastCardPlayedCount && selectedCards.length >= lastCardPlayedCount) {
-        console.log(
-          'Cannot select more cards. You can only play',
-          lastCardPlayedCount,
-          'cards.'
-        );
-        return;
-      }
-    }
-
-    setSelectedCards([...selectedCards, card]);
-  };
-  const handleSkipTurn = () => {
-    const newGame = rollDiceAndSkipTurn(game);
-    if (newGame) {
-      dispatch(actionPlayGame(newGame));
-    }
-    setSelectedCards([]);
-  };
-
-  const handlePlayArtemis = () => {
-    if (selectedArtemisCards.length > 0) {
-      const newGame = playArtemis(
+  const boundHandleSelectArtemisCard = useCallback(
+    (card: Card) => {
+      const lastCardPlayedCount = _.get(
         game,
-        game.currentPlayer,
-        selectedArtemisCards
+        'cardsHistory[0].cardsPlayed.length',
+        0
       );
-      if (newGame) {
-        dispatch(actionPlayGame(newGame));
-      }
-      setSelectedArtemisCards([]); // Reset selected Artemis cards
-      setSelectedCards([]); // Reset selected cards
-    }
-  };
+      const newSelectedArtemisCards = handlers.handleSelectArtemisCard(
+        card,
+        selectedArtemisCards,
+        lastCardPlayedCount
+      );
+      setSelectedArtemisCards(newSelectedArtemisCards);
+    },
+    [selectedArtemisCards, game]
+  );
+
+  const boundHandlePlayCard = useCallback(
+    (card: Card) => {
+      if (game.currentPlayer.id === 'bot') return;
+      const newSelectedCards = handlers.handlePlayCard(card, selectedCards);
+      setSelectedCards(newSelectedCards);
+    },
+    [selectedCards, game?.currentPlayer]
+  );
+
+  const boundHandleSkipTurn = useCallback(() => {
+    const newGame = handlers.handleSkipTurn(game);
+    dispatch(actionPlayGame(newGame));
+    setSelectedCards([]);
+  }, [game, dispatch]);
+
+  const boundHandlePlayArtemis = useCallback(() => {
+    const newGame = handlers.handlePlayArtemis(
+      selectedArtemisCards,
+      game,
+      currentPlayer
+    );
+    dispatch(actionPlayGame(newGame));
+    setSelectedArtemisCards([]);
+    setSelectedCards([]);
+    setShouldDisplayArtemisSelection(false);
+  }, [selectedArtemisCards, game, dispatch]);
 
   const playSelectedCards = (playedCards: Card[]) => {
     if (playedCards.length >= 1) {
-      const newGame = playCard(game, game.currentPlayer, playedCards);
+      const newGame = playCard(game, currentPlayer, playedCards);
       if (newGame) {
         dispatch(actionPlayGame(newGame));
+      }
+      if (newGame && isLastCardArtemis(newGame) && currentPlayer.id !== 'bot') {
+        setShouldDisplayArtemisSelection(true);
       }
       setSelectedCards([]);
     }
   };
 
+  console.log({ game });
+
   const playBotTurnIfNecessary = async () => {
-    const currentPlayer = game.currentPlayer;
     if (currentPlayer.id === 'bot') {
       const botCards = await getBotCards(game, currentPlayer.id);
       if (!botCards?.length) {
-        handleSkipTurn();
+        boundHandleSkipTurn();
         return;
       }
 
       playSelectedCards(botCards);
 
-      // Check for each Artemis card played by the bot
+      let gameAfterArtemisPlay;
+
       botCards.forEach(async (card) => {
         if (card.type === CardType.ARTEMIS) {
           const weakestCard = getWeakestCard(currentPlayer); // Get the weakest card for each Artemis
 
           if (weakestCard) {
-            const artemisPlay = playArtemis(game, currentPlayer, [weakestCard]);
-            if (artemisPlay) {
-              dispatch(actionPlayGame(artemisPlay));
+            gameAfterArtemisPlay = playArtemis(game, currentPlayer, [
+              weakestCard,
+            ]);
+            if (gameAfterArtemisPlay) {
+              dispatch(actionPlayGame(gameAfterArtemisPlay));
             }
           }
         }
       });
+
+      setTimeout(() => actionPlayGame(changePlayerHand(game)), 2000);
     }
   };
 
   React.useEffect(() => {
     setTimeout(() => playBotTurnIfNecessary(), 100);
-  }, [game.currentPlayer.id]);
+  }, [currentPlayer.id]);
 
   const isCardAlreadySelected = (card: Card) => {
-    return selectedCards.some((selectedCard) => selectedCard.id === card.id);
+    return selectedCards?.some((selectedCard) => selectedCard.id === card.id);
   };
 
-  const isButtonDisabled = selectedCards.length === 0;
+  const isButtonDisabled = selectedCards?.length === 0;
 
   const renderGameCard = useCallback(
     ({ item, index }: { item: any; index: number }) => (
@@ -184,13 +151,21 @@ const GameScreen: React.FC = () => {
     []
   );
 
-  const renderSortedCard = ({ item, index }: { item: Card; index: number }) => {
-    const canPlay = canPlayCard(game, game.currentPlayer, item);
+  const renderSortedCard = ({
+    item,
+    index,
+    shouldSelectCard,
+  }: {
+    item: Card;
+    index: number;
+    shouldSelectCard: boolean;
+  }) => {
+    const canPlay = canPlayCard(game, currentPlayer, item);
     const isCardSelected = isCardAlreadySelected(item);
     return (
       <Pressable
-        key={`${game.currentPlayer.id}_${index}_${item.type}_${item.value}`}
-        onPress={() => handlePlayCard(item)}
+        key={`${currentPlayer.id}_${index}_${item.type}_${item.value}`}
+        onPress={() => shouldSelectCard && boundHandlePlayCard(item)}
         disabled={!canPlay}
         style={[
           styles.cardButton,
@@ -203,62 +178,39 @@ const GameScreen: React.FC = () => {
     );
   };
 
-  const currentPlayerCards =
-    game.players.find((player) => player.id !== 'bot')?.cards || [];
-  const currentBotCards =
-    game.players.find((player) => player.id === 'bot')?.cards || [];
+  const renderArtemisSelectCard = () => {
+    const sortedCards = _.sortBy(
+      handlers.currentPlayerCards(players),
+      'position'
+    );
 
-  const sortedBotCards = [...currentBotCards].sort(
-    (a, b) => a.position - b.position
-  );
-  const sortedCards = [...currentPlayerCards].sort(
-    (a, b) => a.position - b.position
-  );
-  const gameCards = game.cardsHistory.map((card) => ({
-    playerId: card.playerId,
-    cardsPlayed: card.cardsPlayed.map((c) => c.value),
-  }));
-
-  function renderSelectCardToGiveSection() {
-    if (game.currentPlayer.id !== 'bot') return;
-    if (isLastCardArtemis(game)) {
-      // Sort cards from weakest to highest
-      const sortedCards = currentPlayerCards
-        .slice()
-        .sort((a, b) => calculateCardValue(a) - calculateCardValue(b));
-
-      return (
-        <View>
-          <Text>Select cards to give to another player:</Text>
-          {sortedCards.map((card, index) => (
+    return (
+      <View>
+        <Text>Select cards to give to another player:</Text>
+        {sortedCards.map((card, index) => {
+          const isSelected = _.includes(selectedArtemisCards, card);
+          return (
             <Pressable
               key={`artemisCard_${index}_${card.type}_${card.value}`}
-              onPress={() => handleSelectArtemisCard(card)}
+              onPress={() => boundHandleSelectArtemisCard(card)}
               style={[
                 styles.cardButton,
-                {
-                  backgroundColor: selectedArtemisCards.includes(card)
-                    ? 'green'
-                    : 'black',
-                  opacity: selectedArtemisCards.includes(card) ? 0.3 : 1.0,
-                },
+                isSelected ? styles.cardSelected : styles.cardUnselected,
               ]}
             >
               <Text style={styles.cardButtonText}>{card.value.toString()}</Text>
             </Pressable>
-          ))}
-          {selectedArtemisCards.length > 0 && (
-            <Button
-              title={`Play Artemis on selected cards`}
-              onPress={handlePlayArtemis}
-            />
-          )}
-        </View>
-      );
-    } else {
-      return null;
-    }
-  }
+          );
+        })}
+        {selectedArtemisCards.length > 0 && (
+          <Button
+            title={`Play Artemis on selected cards`}
+            onPress={boundHandlePlayArtemis}
+          />
+        )}
+      </View>
+    );
+  };
 
   // Inside your main render function:
   return (
@@ -267,28 +219,32 @@ const GameScreen: React.FC = () => {
       <View>
         <FlatList
           showsHorizontalScrollIndicator={false}
-          data={sortedBotCards}
-          renderItem={renderSortedCard}
-          keyExtractor={(item, index) => `sortedCard_${index}`}
+          data={handlers.sortedBotCards(players)}
+          renderItem={({ item, index }) =>
+            renderSortedCard({ item, index, shouldSelectCard: false })
+          }
+          keyExtractor={(_item, index) => `sortedCard_${index}`}
           horizontal
           style={styles.buttonContainer}
         />
-        <Text>Current Player: {game.currentPlayer.id}</Text>
+        <Text>Current Player: {currentPlayer.id}</Text>
         <Text>Cards Played: </Text>
         <FlatList
-          data={gameCards}
+          data={handlers.getGameCardsHistory(cardsHistory)}
           renderItem={renderGameCard}
-          keyExtractor={(item, index) => `gameCard_${index}`}
+          keyExtractor={(_item, index) => `gameCard_${index}`}
         />
       </View>
       <FlatList
         showsHorizontalScrollIndicator={false}
-        data={sortedCards}
-        renderItem={renderSortedCard}
-        keyExtractor={(item, index) => `sortedCard_${index}`}
+        data={handlers.sortedCards(players)}
+        renderItem={({ item, index }) =>
+          renderSortedCard({ item, index, shouldSelectCard: true })
+        }
+        keyExtractor={(_item, index) => `sortedCard_${index}`}
         ListFooterComponent={() => {
           return (
-            <Pressable onPress={handleSkipTurn} style={styles.skipButton}>
+            <Pressable onPress={boundHandleSkipTurn} style={styles.skipButton}>
               <Text style={styles.cardButtonText}>Skip turn</Text>
             </Pressable>
           );
@@ -297,7 +253,7 @@ const GameScreen: React.FC = () => {
         style={styles.buttonContainer}
       />
 
-      {renderSelectCardToGiveSection()}
+      {shouldDisplayArtemisSelection && renderArtemisSelectCard()}
 
       <Button
         title='Play Selected Cards'
@@ -331,6 +287,14 @@ const styles = StyleSheet.create({
   cardButtonText: {
     color: 'white',
     fontWeight: '800',
+  },
+  cardSelected: {
+    backgroundColor: 'green',
+    opacity: 0.3,
+  },
+  cardUnselected: {
+    backgroundColor: 'black',
+    opacity: 1.0,
   },
   skipButton: {
     marginHorizontal: 4,
