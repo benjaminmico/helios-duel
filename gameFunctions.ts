@@ -734,7 +734,9 @@ export function isLastCardArtemis(game: Game): boolean {
 
   const lastPlayedCard = lastCardHistory.cardsPlayed[0];
 
-  return lastPlayedCard.type === CardType.ARTEMIS;
+  return (
+    lastPlayedCard.type === CardType.ARTEMIS && !lastPlayedCard.isTurnedOff
+  );
 }
 
 export function hasArtemisCard(player: Player): boolean {
@@ -759,4 +761,50 @@ export function getWeakestCard(player: Player): Card | null {
   }
 
   return weakestCard;
+}
+
+export function isGameOver(game: Game): {
+  isOver: boolean;
+  winner?: Player;
+  loser?: Player;
+  reason?: string;
+} {
+  for (const player of game.players) {
+    if (player.cards.length === 0) {
+      const opponent = game.players.find((p) => p.id !== player.id);
+
+      // Check for an active Artemis card in the opponent's hand
+      if (opponent && hasActiveArtemisCard(opponent)) {
+        return { isOver: false };
+      }
+
+      // Check if the last card played by the winning player is a power card
+      const lastCardPlayed = game.cardsHistory[0]?.cardsPlayed[0];
+      if (lastCardPlayed && isPowerCard(lastCardPlayed)) {
+        return {
+          isOver: true,
+          winner: opponent, // Opponent wins if last card played is a power card
+          loser: player,
+          reason: 'Playing a power card as the last card results in a loss.',
+        };
+      }
+
+      // Normal win condition
+      return {
+        isOver: true,
+        winner: player,
+        loser: opponent,
+      };
+    }
+  }
+
+  // Game is not over if no player has 0 cards
+  return { isOver: false };
+}
+
+// Function to check if a player has an active Artemis card
+function hasActiveArtemisCard(player: Player): boolean {
+  return player.cards.some(
+    (card) => card.type === CardType.ARTEMIS && !card.isTurnedOff
+  );
 }
