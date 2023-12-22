@@ -164,15 +164,11 @@ export const computePossibleMoves = (game: MCTSGame): Array<MCTSMove> => {
   const otherPlayer = game.players.find(
     ({ id }) => id !== game.currentPlayerId
   );
-
   if (!otherPlayer) {
     return [];
   }
 
-  const hasOtherPlayerFinished = otherPlayer.cards.length === 0;
-
   const player = game.players.find(({ id }) => id === game.currentPlayerId);
-
   if (!player) {
     return [];
   }
@@ -181,49 +177,42 @@ export const computePossibleMoves = (game: MCTSGame): Array<MCTSMove> => {
     player.cards
   );
 
-  const legalPlayMoves: Array<MCTSMovePlayCard> = Object.values(
-    cardsByPosition
-  ).flatMap<MCTSMovePlayCard>((cards: Card[]) =>
-    Array.from({ length: cards.length }).map((_, index) => ({
-      skip: false,
-      cards: cards.slice(0, index + 1),
-    }))
-  );
-  // // if the otherPlayer has finished, must play artemis
-  // .filter(
-  //   ({ cards }) =>
-  //     !hasOtherPlayerFinished || cards[0].type === CardType.ARTEMIS
-  // );
-
-  // you can play any card at the beginning of the turn, but you can't skip
-  if (game.currentPlayHistory.length === 0) {
-    return legalPlayMoves;
-  }
-
-  // you must play artemis if the other player finished
-  const legalSkipMoves: Array<MCTSMove> = hasOtherPlayerFinished
-    ? []
-    : getSkipMoves();
-
   const lastPlayedCardMove = game.currentPlayHistory.find(
     ({ cards }) => !!cards && cards.length > 0
   );
+  const lastPlayedCard = lastPlayedCardMove
+    ? lastPlayedCardMove.cards[0]
+    : null;
+  const lastPlayedCardLength = lastPlayedCardMove
+    ? lastPlayedCardMove.cards.length
+    : 0;
 
-  const lastPlayedCard = lastPlayedCardMove.cards[0];
-  const lastPlayedOccurence = lastPlayedCardMove.cards.length;
-  const isSkipRule = checkSkipRule(game);
-
-  const cardToPlay = legalSkipMoves.concat(
-    legalPlayMoves.filter(
-      ({ cards }) =>
-        cards.length === lastPlayedOccurence &&
-        (isSkipRule
-          ? cards[0].value === 17
-          : cards[0].value >= lastPlayedCard.value)
+  const legalPlayMoves: Array<MCTSMovePlayCard> = Object.values(cardsByPosition)
+    .flatMap<MCTSMovePlayCard>((cards: Card[]) =>
+      Array.from({ length: cards.length }).map((_, index) => ({
+        skip: false,
+        cards: cards.slice(0, index + 1),
+      }))
     )
-  );
+    .filter(({ cards }) => {
+      // Allow any card if no cards have been played yet
+      if (!lastPlayedCard) {
+        return true;
+      }
 
-  return cardToPlay;
+      // Filter out moves that play cards of lower value than the last played card
+      // and ensure the number of cards played matches the length of the last played move
+      return (
+        cards[0].position >= lastPlayedCard.position &&
+        cards.length === lastPlayedCardLength
+      );
+    });
+
+  // Include skip moves if applicable
+  const legalSkipMoves: Array<MCTSMove> =
+    game.currentPlayHistory.length === 0 ? [] : getSkipMoves();
+
+  return legalPlayMoves.concat(legalSkipMoves);
 };
 
 /**
