@@ -7,6 +7,7 @@ import {
   Button,
   StyleSheet,
   SafeAreaView,
+  Modal,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from './reducers';
@@ -19,6 +20,7 @@ import {
   canPlayCard,
   changePlayerHand,
   getWeakestCard,
+  isGameOver,
   isLastCardArtemis,
   playArtemis,
   playCard,
@@ -29,6 +31,7 @@ import {
 import { getBotCards } from 'bot/bot.service';
 import _ from 'lodash';
 import * as handlers from './handlers';
+import { router } from 'expo-router';
 
 const GameScreen: React.FC = () => {
   const dispatch = useDispatch();
@@ -38,6 +41,7 @@ const GameScreen: React.FC = () => {
   const [selectedArtemisCards, setSelectedArtemisCards] = React.useState<
     Card[]
   >([]);
+  const [showModal, setShowModal] = useState<boolean>(false);
 
   const [shouldDisplayArtemisSelection, setShouldDisplayArtemisSelection] =
     useState<boolean>(false);
@@ -64,7 +68,11 @@ const GameScreen: React.FC = () => {
   const boundHandlePlayCard = useCallback(
     (card: Card) => {
       if (game.currentPlayer.id === 'bot') return;
-      const newSelectedCards = handlers.handlePlayCard(card, selectedCards);
+      const newSelectedCards = handlers.handlePlayCard(
+        card,
+        selectedCards,
+        game
+      );
       setSelectedCards(newSelectedCards);
     },
     [selectedCards, game?.currentPlayer]
@@ -93,6 +101,11 @@ const GameScreen: React.FC = () => {
       const newGame = playCard(game, currentPlayer, playedCards);
       if (newGame) {
         dispatch(actionPlayGame(newGame));
+        const gameState = isGameOver(newGame);
+        if (gameState.isOver) {
+          setShowModal(true); // Add this line
+          // ... handle end game logic here
+        }
       }
       if (newGame && isLastCardArtemis(newGame) && currentPlayer.id !== 'bot') {
         setShouldDisplayArtemisSelection(true);
@@ -212,6 +225,34 @@ const GameScreen: React.FC = () => {
     );
   };
 
+  const renderModal = () => {
+    const gameState = isGameOver(game);
+    return (
+      <Modal
+        animationType='slide'
+        transparent={true}
+        visible={showModal}
+        onRequestClose={() => {
+          setShowModal(false);
+        }}
+      >
+        <View style={styles.modalView}>
+          <Text style={styles.modalText}>
+            Game Over! Winner: {gameState.winner?.id}, Loser:{' '}
+            {gameState.loser?.id}
+          </Text>
+          <Button
+            title='Close'
+            onPress={() => {
+              setShowModal(false);
+              router.back();
+            }}
+          />
+        </View>
+      </Modal>
+    );
+  };
+
   // Inside your main render function:
   return (
     <SafeAreaView style={styles.container}>
@@ -260,6 +301,7 @@ const GameScreen: React.FC = () => {
         onPress={() => playSelectedCards(selectedCards)}
         disabled={isButtonDisabled}
       />
+      {renderModal()}
     </SafeAreaView>
   );
 };
@@ -302,6 +344,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+    fontSize: 18,
   },
 });
 
