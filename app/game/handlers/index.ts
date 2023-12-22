@@ -22,8 +22,6 @@ export const handlePlayCard = (
       0
     );
 
-    console.log('selectedCards', selectedCards, lastTurnCardsCount);
-
     // Remove the selected card if it's already selected
     if (_.some(selectedCards, { id: card.id })) {
       return _.filter(selectedCards, (c) => c.id !== card.id);
@@ -32,7 +30,7 @@ export const handlePlayCard = (
     // Can't select a number of cards higher than the previous one number of cards played
     if (
       lastTurnCardsCount > 0 &&
-      selectedCards?.length !== lastTurnCardsCount
+      selectedCards?.length === lastTurnCardsCount
     ) {
       return selectedCards;
     }
