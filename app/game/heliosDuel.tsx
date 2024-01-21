@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -225,13 +225,6 @@ const GameScreen: React.FC = () => {
       </View>
     );
   };
-
-  console.log(
-    'decccck',
-    deck.map((c) =>
-      c.type.includes('NORMAL') ? `${c.type}_${c.value}` : c.type
-    )
-  );
 
   const renderModal = () => {
     const gameState = isGameOver(game);

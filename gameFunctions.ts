@@ -31,6 +31,7 @@ export interface Game {
   deck: Card[];
   discardPile: Card[];
   chosenLevel: BotDifficulty;
+  action?: Action;
 }
 
 export enum CardType {
@@ -43,6 +44,30 @@ export enum CardType {
   ARTEMIS = 'ARTEMIS',
   HYPNOS = 'HYPNOS',
 }
+
+export enum ActionName {
+  GAME_BEGIN = 'GAME_BEGIN',
+  CARD = 'CARD', //to add on Frontend side
+  CARD_PLAYED = 'CARD_PLAYED',
+  ARTEMIS = 'ARTEMIS',
+  HYPNOS = 'HYPNOS',
+  HADES = 'HADES',
+  JOKER = 'JOKER',
+  ARTEMIS_GIVED = 'ARTEMIS_GIVED',
+  HADES_DISCARDED = 'HADES_DISCARDED',
+  HYPNOS_TURNED_OFF = 'HYPNOS_TURNED_OFF',
+  SKIP_WITH_DICE_ROLL = 'SKIP_WITH_DICE_ROLL',
+  DICE_ROLL_PICK_CARD = 'DICE_ROLL_PICK_CARD',
+  DICE_ROLL_UNCHANGED = 'DICE_ROLL_UNCHANGED',
+  GAME_FINISHED = 'GAME_FINISHED',
+  GAME_FINISHED_ARTEMIS = 'GAME_FINISHED_ARTEMIS',
+  GAME_FINISHED_GOD = 'GAME_FINISHED_GOD',
+}
+
+export type Action = {
+  id: ActionName;
+  [key: string]: any;
+};
 
 export enum CardValue {
   A = 'A',
@@ -72,6 +97,11 @@ export type CardGod =
   | CardType.HADES
   | CardType.ARTEMIS
   | CardType.HYPNOS;
+
+function addAction(action: Action): Action {
+  console.log('Action: ', action);
+  return action;
+}
 
 export function calculateCardValue(card: Card): number {
   switch (card.type) {
@@ -228,7 +258,10 @@ export function rollDice(): number {
 }
 
 // Function to conduct a dice duel between two players
-export function diceDuel(player1: Player, player2: Player): Player | null {
+export function diceDuel(
+  player1: Player,
+  player2: Player
+): { winnerDicePlayer: Player; looserDicePlayer: Player } | null {
   while (true) {
     const diceRollPlayer1 = rollDice();
     const diceRollPlayer2 = rollDice();
@@ -238,10 +271,10 @@ export function diceDuel(player1: Player, player2: Player): Player | null {
 
     if (diceRollPlayer1 > diceRollPlayer2) {
       console.log(`${player1.id} wins the dice duel!`);
-      return player1;
+      return { winnerDicePlayer: player1, looserDicePlayer: player2 };
     } else if (diceRollPlayer1 < diceRollPlayer2) {
       console.log(`${player2.id} wins the dice duel!`);
-      return player2;
+      return { winnerDicePlayer: player2, looserDicePlayer: player1 };
     } else {
       console.log("It's a tie! Rolling the dice again...");
       // If it's a tie, continue the loop to roll the dice again
@@ -293,11 +326,20 @@ export function initializeGame(players: Player[], deck: Card[]): Game {
   console.log('Initiating dice duel to determine the starting player...');
 
   while (true) {
-    const firstPlayer = diceDuel(players[0], players[1]);
+    const result = diceDuel(players[0], players[1]);
 
-    if (firstPlayer !== null) {
-      game.currentPlayer = firstPlayer;
-      console.log(`${firstPlayer.id} wins the dice duel and starts the game!`);
+    if (result?.winnerDicePlayer !== null) {
+      //@ts-ignore
+      const { winnerDicePlayer, looserDicePlayer } = result;
+      game.currentPlayer = winnerDicePlayer;
+      game.action = addAction({
+        id: ActionName.GAME_BEGIN,
+        winnerDicePlayerId: winnerDicePlayer.id,
+        looserDicePlayerId: looserDicePlayer.id,
+      });
+      console.log(
+        `${winnerDicePlayer.id} wins the dice duel and starts the game!`
+      );
       break;
     }
   }
@@ -324,6 +366,11 @@ export function skipTurn(game: Game, currentPlayer: Player): Game {
     (player) => player.id !== currentPlayer.id
   )!;
 
+  // // When skip, user has to roll the dice
+  // game.action = {
+  //   id: ActionName.SKIP_WITH_DICE_ROLL,
+  //   playerId: game.currentPlayer.id,
+  // };
   console.log(`${currentPlayer.id} skip turn`);
   return game;
 }
@@ -339,7 +386,11 @@ export function rollDiceAndSkipTurn(game: Game): Game {
     const drawnCard = drawCardFromDeck(game);
     if (drawnCard) {
       console.log(`${currentPlayer.id} drew a card: ${drawnCard.value}`);
-
+      game.action = addAction({
+        id: ActionName.DICE_ROLL_PICK_CARD,
+        playerId: game.currentPlayer.id,
+        diceRoll,
+      });
       // Find the index of the current player in the game.players array
       const currentPlayerIndex = game.players.findIndex(
         (player) => player.id === currentPlayer.id
@@ -350,6 +401,12 @@ export function rollDiceAndSkipTurn(game: Game): Game {
         game.players[currentPlayerIndex].cards.push(drawnCard);
       }
     }
+  } else {
+    game.action = addAction({
+      id: ActionName.DICE_ROLL_UNCHANGED,
+      playerId: game.currentPlayer.id,
+      diceRoll,
+    });
   }
 
   game = skipTurn(game, currentPlayer);
@@ -447,12 +504,6 @@ export function playCard(
     return null;
   }
 
-  for (const card of cards) {
-    if (!player.cards.includes(card)) {
-      return null;
-    }
-  }
-
   let newGame = game;
 
   // Remove the played cards from the player's hand
@@ -463,6 +514,10 @@ export function playCard(
 
   for (const card of cards) {
     if (card.type === CardType.JOKER) {
+      game.action = addAction({
+        id: ActionName.JOKER,
+        playerId: player.id,
+      });
       newGame = cleanCardTable(newGame); // If any card is a JOKER, clean the table immediately
       return {
         ...newGame,
@@ -470,6 +525,20 @@ export function playCard(
       };
       break;
     }
+  }
+
+  if (isPowerCard(cards[0])) {
+    newGame.action = {
+      id: cards[0].type as unknown as ActionName,
+      playerId: player.id,
+      card: JSON.stringify(cards.map((card) => card.value)),
+    };
+  } else {
+    newGame.action = addAction({
+      id: ActionName.CARD_PLAYED,
+      playerId: player.id,
+      card: JSON.stringify(cards.map((card) => card.value)),
+    });
   }
 
   console.log(
@@ -502,6 +571,13 @@ export function playArtemis(
   // Add the card to the target player's hand
   newGame = addCardsToPlayer(newGame, targetPlayer, cardsToPass);
 
+  newGame.action = addAction({
+    id: ActionName.ARTEMIS_GIVED,
+    playerId: player.id,
+    targetPlayerId: targetPlayer.id,
+    cards: cardsToPass.map((card) => card.value),
+  });
+
   console.log(
     `Artemis - ${JSON.stringify(
       cardsToPass.map((card) => card.value)
@@ -531,6 +607,12 @@ export function playHades(game: Game): Game {
   // Remove the best card from the target player's hand
   newGame = removePlayerCards(newGame, targetPlayer, [bestCard]);
 
+  newGame.action = addAction({
+    id: ActionName.HADES_DISCARDED,
+    playerId: game.currentPlayer.id,
+    targetPlayerId: targetPlayer.id,
+    card: bestCard.value,
+  });
   console.log(
     `Hades - best card removed from ${targetPlayer.id}, ${bestCard}, ${game}, ${newGame}`
   );
@@ -552,6 +634,13 @@ export function playHypnos(game: Game): Game {
 
   // Turn off best card
   newGame = turnOffCard(game, targetPlayer, bestCard);
+
+  newGame.action = addAction({
+    id: ActionName.HYPNOS_TURNED_OFF,
+    playerId: game.currentPlayer.id,
+    targetPlayerId: targetPlayer.id,
+    card: bestCard.value,
+  });
   console.log(
     `Hypnos - ${bestCard.value} turned off from ${targetPlayer.id}`,
     bestCard,
@@ -774,16 +863,28 @@ export function isGameOver(game: Game): {
 } {
   for (const player of game.players) {
     if (player.cards.length === 0) {
+      const currentPlayer = game.players.find((p) => p.id === player.id);
       const opponent = game.players.find((p) => p.id !== player.id);
 
       // Check for an active Artemis card in the opponent's hand
       if (opponent && hasActiveArtemisCard(opponent)) {
+        game.action = addAction({
+          id: ActionName.GAME_FINISHED_ARTEMIS,
+          winnerPlayerId: currentPlayer?.id,
+          artemisOwnerPlayerId: opponent.id,
+        });
         return { isOver: false };
       }
 
       // Check if the last card played by the winning player is a power card
       const lastCardPlayed = game.cardsHistory[0]?.cardsPlayed[0];
       if (lastCardPlayed && isPowerCard(lastCardPlayed)) {
+        game.action = addAction({
+          id: ActionName.GAME_FINISHED_GOD,
+          winnerPlayerId: opponent?.id,
+          looserPlayerId: player?.id,
+        });
+
         return {
           isOver: true,
           winner: opponent, // Opponent wins if last card played is a power card
@@ -791,6 +892,12 @@ export function isGameOver(game: Game): {
           reason: 'Playing a power card as the last card results in a loss.',
         };
       }
+
+      game.action = addAction({
+        id: ActionName.GAME_FINISHED,
+        winnerPlayerId: player.id,
+        looserPlayerId: opponent?.id,
+      });
 
       // Normal win condition
       return {

@@ -23,10 +23,11 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { sortedCards } from 'app/handlers';
+import { currentPlayerCards, sortedCards } from 'app/handlers';
 import CardAnimated from '../CardAnimated';
 import CardCurrentPlayer from '../CardCurrentPlayer';
 import GameCardsSelected from './GameCardsSelected';
+import GameCardsOpponent from './GameCardsOpponent';
 
 interface IPresidentCurrentPlayerCards {
   game: Game;
@@ -40,10 +41,13 @@ export const MAX_NB_CARDS_BY_LINE = 9;
 const PresidentCurrentPlayerCards: FunctionComponent<
   IPresidentCurrentPlayerCards
 > = ({ game, playerCardsRefs, onCardsSelected, style }) => {
-  const cards = sortedCards(game.players);
+  const cards = currentPlayerCards(game.players);
 
   const [selectedCards, setSelectedCards] = useState<Card[]>([]);
   const [firstSelectedCard, setFirstSelectedCard] = useState<Card>();
+
+  const [hidePlayedCardsDuringAnimation, setHidePlayedCardsDuringAnimation] =
+    useState(false);
 
   const hasSelectedCard = useRef<boolean>(false);
 
@@ -76,8 +80,6 @@ const PresidentCurrentPlayerCards: FunctionComponent<
 
     onCardsSelected([item]);
   };
-
-  console.log('selectedCards?.length', selectedCards?.length);
 
   const renderItem: ListRenderItem<Card> = ({ item, index }) => {
     const canPlay = canPlayCard(game, game.currentPlayer, item);
@@ -147,6 +149,19 @@ const PresidentCurrentPlayerCards: FunctionComponent<
             {renderCardList()}
           </Animated.View>
         )}
+      </View>
+      <View
+        style={{
+          position: 'absolute',
+          alignSelf: 'center',
+          marginTop: 80,
+        }}
+      >
+        <GameCardsOpponent
+          game={game}
+          hidePlayedCards={setHidePlayedCardsDuringAnimation}
+          startNewCardFromPileAnimation={setHidePlayedCardsDuringAnimation}
+        />
       </View>
       {!!selectedCards?.length && (
         <GameCardsSelected

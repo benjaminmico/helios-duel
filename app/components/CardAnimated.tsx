@@ -327,7 +327,6 @@ const CardAnimated: FunctionComponent<ICardAnimatedProps> = forwardRef(
 
     useImperativeHandle(ref, () => ({
       async startPlayAnimation(cardIndex: number) {
-        console.log('ccc');
         setHasPendingAnimations(true);
         await startCardPlayedAnimation(cardIndex);
         // if (action === 'CARD_PLAYED') {
