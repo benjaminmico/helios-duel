@@ -360,13 +360,16 @@ export function rollDiceAndSkipTurn(game: Game): Game {
   return game;
 }
 
+export const getCardOccurrences = (playerCards: Card[], card: Card) =>
+  playerCards.filter((playerCard) => playerCard.position === card.position);
+
 export function canPlayCard(game: Game, player: Player, card: Card): boolean {
   if (!game.cardsHistory.length) {
     return true;
   }
 
   const playerCards = player.cards;
-  const sameCardOccurences = playerCards.filter(
+  const sameCardOccurrences = playerCards.filter(
     (playerCard) => playerCard.position === card.position
   ).length;
 
@@ -380,7 +383,7 @@ export function canPlayCard(game: Game, player: Player, card: Card): boolean {
   if (lastCardsPlayed.length > 1) {
     if (
       card.position >= lastCardsPlayed[0].position &&
-      sameCardOccurences >= lastCardsPlayed.length
+      sameCardOccurrences >= lastCardsPlayed.length
     ) {
       return true;
     }

@@ -10,8 +10,8 @@ import {
   Modal,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from './reducers';
-import { actionPlayGame } from './actions/gameActions';
+import { RootState } from '../reducers';
+import { actionPlayGame } from '../actions/gameActions';
 import {
   Card,
   CardType,
@@ -19,6 +19,7 @@ import {
   calculateCardValue,
   canPlayCard,
   changePlayerHand,
+  deck,
   getWeakestCard,
   isGameOver,
   isLastCardArtemis,
@@ -30,8 +31,9 @@ import {
 } from 'gameFunctions';
 import { getBotCards } from 'bot/bot.service';
 import _ from 'lodash';
-import * as handlers from './handlers';
+import * as handlers from '../handlers';
 import { router } from 'expo-router';
+import { default as CardComponent } from 'app/components/Card';
 
 const GameScreen: React.FC = () => {
   const dispatch = useDispatch();
@@ -181,12 +183,11 @@ const GameScreen: React.FC = () => {
         onPress={() => shouldSelectCard && boundHandlePlayCard(item)}
         disabled={!canPlay}
         style={[
-          styles.cardButton,
-          { backgroundColor: isCardSelected ? 'green' : 'black' },
+          { backgroundColor: isCardSelected ? 'green' : 'transparent' },
           { opacity: canPlay ? 1.0 : 0.3 },
         ]}
       >
-        <Text style={styles.cardButtonText}>{item.value.toString()}</Text>
+        <CardComponent key={index} card={item} />
       </Pressable>
     );
   };
@@ -225,6 +226,13 @@ const GameScreen: React.FC = () => {
     );
   };
 
+  console.log(
+    'decccck',
+    deck.map((c) =>
+      c.type.includes('NORMAL') ? `${c.type}_${c.value}` : c.type
+    )
+  );
+
   const renderModal = () => {
     const gameState = isGameOver(game);
     return (
@@ -256,7 +264,6 @@ const GameScreen: React.FC = () => {
   // Inside your main render function:
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.heading}>Card Game</Text>
       <View>
         <FlatList
           showsHorizontalScrollIndicator={false}

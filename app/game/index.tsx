@@ -4,11 +4,11 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { BotDifficulty, Player, deck, initializeGame } from 'gameFunctions';
-import { startGame, playBotTurn } from './actions/gameActions';
+import { startGame, playBotTurn } from '../actions/gameActions';
 import { RouteProp, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from 'types/NavigationTypes';
 import { router } from 'expo-router';
-import { RootState } from './reducers';
+import { RootState } from '../reducers';
 
 type StartScreenRouteProp = RouteProp<RootStackParamList, 'start'>;
 type StartScreenNavigationProp = NavigationProp<RootStackParamList, 'start'>;

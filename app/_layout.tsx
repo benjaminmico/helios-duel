@@ -15,7 +15,7 @@ import {
 } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { Provider } from 'react-redux';
-import store from './game/reducers';
+import store from './reducers';
 
 SplashScreen.preventAutoHideAsync();
 

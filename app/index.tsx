@@ -14,8 +14,8 @@ import { BotDifficulty, Player, deck, initializeGame } from 'gameFunctions';
 import { RouteProp, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from 'types/NavigationTypes';
 import { router } from 'expo-router';
-import { RootState } from './game/reducers';
-import { startGame } from './game/actions/gameActions';
+import { RootState } from './reducers';
+import { startGame } from './actions/gameActions';
 
 type StartScreenRouteProp = RouteProp<RootStackParamList, 'start'>;
 type StartScreenNavigationProp = NavigationProp<RootStackParamList, 'start'>;
@@ -60,7 +60,7 @@ const StartScreen: React.FC<Props> = () => {
     // // Optionally, let the bot play its turn after the player starts the game
     // // dispatch(playBotTurn());
 
-    router.push({ pathname: '/game/heliosDuel' });
+    router.push({ pathname: '/game/heliosDuelTest' });
   };
 
   return (

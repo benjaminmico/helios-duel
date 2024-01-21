@@ -128,6 +128,21 @@ export const handleBotPlayArtemis = (
 };
 
 // @TODO improve that based on local player id
+
+export const getPlayer = (
+  players: Player[],
+  playerId: string | 'user' | 'bot'
+) => {
+  switch (playerId) {
+    case 'user':
+      return players.find((player) => player.id !== 'bot');
+    case 'bot':
+      return players.find((player) => player.id === 'bot');
+    default:
+      return players.find((player) => player.id == playerId);
+  }
+};
+
 export const currentPlayerCards = (players: Player[]) =>
   players.find((player) => player.id !== 'bot')?.cards || [];
 
