@@ -100,7 +100,7 @@ const PresidentCurrentPlayerCards: FunctionComponent<
         nbCardsOccurrences={index % 2}
         item={item}
         onCardPress={onCardPress}
-        cardLocked={(_) => false}
+        cardLocked={!canPlay}
         currIndex={index}
         sortedCards={cards || []}
       />

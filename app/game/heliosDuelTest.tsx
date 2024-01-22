@@ -48,6 +48,8 @@ const HeliosDuelTest: FunctionComponent = () => {
     useState<number>();
   const [hasPressedCard, setHasPressedCard] = useState<boolean>(false);
 
+  console.log('gggg', game.currentPlayer.id);
+
   const dispatch = useDispatch();
 
   const playerCardsRefs = useRef<Animated.View[]>([]);

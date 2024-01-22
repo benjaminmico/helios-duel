@@ -33,7 +33,7 @@ interface ICardAnimatedProps {
   shouldPlay: boolean;
   item: Card;
   onCardPress: (card: Card) => void;
-  cardLocked: (card: Card) => boolean | undefined;
+  cardLocked: boolean | undefined;
   maxNbCardsByLine: number;
   currIndex: number;
   sortedCards: Card[];
@@ -369,7 +369,7 @@ const CardAnimated: FunctionComponent<ICardAnimatedProps> = forwardRef(
           enabled={shouldPlay}
           card={item}
           onPress={handleOnPressCard}
-          isLocked={!cardVisible && cardLocked(item)}
+          isLocked={cardLocked}
           style={cartItemStyle}
         />
       </Animated.View>

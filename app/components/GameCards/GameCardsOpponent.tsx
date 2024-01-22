@@ -71,7 +71,7 @@ const GameCardsOpponent: FunctionComponent<IGameCardsOpponent> = ({
 
   useEffect(() => {
     const opponentsCards = sortedBotCards(game.players);
-
+    console.log('opponentsCards', opponentsCards?.length);
     if (!opponentsCards || !opponentsCards.length) {
       return;
     }
@@ -163,14 +163,7 @@ const GameCardsOpponent: FunctionComponent<IGameCardsOpponent> = ({
         data={opponentCards}
         keyExtractor={(card: Card) => card.id}
         horizontal
-        contentContainerStyle={
-          {
-            // paddingBottom: 500,
-            // paddingTop: 150,
-            // paddingRight: 100,
-            // paddingLeft: 100,
-          }
-        }
+        contentContainerStyle={{}}
         scrollEnabled={false}
         style={{ overflow: 'visible' }}
         renderItem={({ item, index }) => (
@@ -205,6 +198,8 @@ const styles: IStyles = StyleSheet.create({
   list: {
     alignItems: 'center',
     zIndex: 2,
+    marginRight: -100,
+    marginLeft: -100,
   },
 });
 
