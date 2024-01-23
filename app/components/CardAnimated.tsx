@@ -26,7 +26,7 @@ import CardItem, {
   CARD_PREVIEW_HEIGHT,
   CARD_PREVIEW_WIDTH,
 } from './Card';
-import { Card } from 'gameFunctions';
+import { ActionName, Card } from 'gameFunctions';
 import { AnimationsContext } from 'app/core/AnimationsProvider';
 
 interface ICardAnimatedProps {
@@ -326,18 +326,19 @@ const CardAnimated: FunctionComponent<ICardAnimatedProps> = forwardRef(
       });
 
     useImperativeHandle(ref, () => ({
-      async startPlayAnimation(cardIndex: number) {
+      async startPlayAnimation(action: ActionName, cardIndex: number) {
         setHasPendingAnimations(true);
-        await startCardPlayedAnimation(cardIndex);
-        // if (action === 'CARD_PLAYED') {
-        //   await startCardPlayedAnimation();
-        // } else if (action === 'HADES_DISCARDED') {
-        //   await startCardToDiscardAnimation();
-        // } else if (action === 'ARTEMIS_GIVED') {
+        if (action === ActionName.CARD_PLAYED) {
+          await startCardPlayedAnimation(cardIndex);
+        } else if (action === ActionName.HADES_DISCARDED) {
+          await startCardToDiscardAnimation();
+        }
+        // else if (action === ActionName.ARTEMIS_GIVED) {
         //   await startCardGivenAnimation();
-        // } else if (action === 'HYPNOS_TURNED_OFF') {
-        //   await startTurningOffAnimation();
         // }
+        else if (action === ActionName.HYPNOS_TURNED_OFF) {
+          await startTurningOffAnimation();
+        }
         setTimeout(() => setHasPendingAnimations(false), 500);
       },
     }));

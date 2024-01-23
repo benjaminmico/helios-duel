@@ -27,7 +27,7 @@ import CardItem, {
   CARD_PREVIEW_HEIGHT,
   CARD_PREVIEW_WIDTH,
 } from './Card';
-import { Card as CardType } from 'gameFunctions';
+import { ActionName, Card as CardType } from 'gameFunctions';
 import { AnimationsContext } from 'app/core/AnimationsProvider';
 import Card from './Card';
 
@@ -352,21 +352,23 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
       });
 
     useImperativeHandle(ref, () => ({
-      async startPlayAnimation(action: string) {
+      async startPlayAnimation(action: ActionName) {
         setHasPendingAnimations(true);
+
         if (
-          action === 'CARD_PLAYED' ||
-          action === 'ARTEMIS' ||
-          action === 'HYPNOS' ||
-          action === 'HERMES' ||
-          action === 'HADES'
+          action === ActionName.CARD_PLAYED ||
+          action === ActionName.ARTEMIS ||
+          action === ActionName.HYPNOS ||
+          action === ActionName.HADES ||
+          action === ActionName.ARTEMIS_GIVED
         ) {
           await startCardPlayedAnimation();
-        } else if (action === 'HADES_DISCARDED') {
+        } else if (action === ActionName.HADES_DISCARDED) {
           await startCardToDiscardAnimation();
-        } else if (action === 'ARTEMIS_GIVED') {
-          await startCardGivenAnimation();
         }
+        // else if (action === ActionName.ARTEMIS_GIVED) {
+        //   await startCardGivenAnimation();
+        // }
         setTimeout(() => setHasPendingAnimations(false), 500);
       },
     }));

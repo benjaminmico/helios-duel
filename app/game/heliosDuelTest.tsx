@@ -9,6 +9,7 @@ import Animated from 'react-native-reanimated';
 import {
   Card,
   CardType,
+  Game,
   changePlayerHand,
   getWeakestCard,
   isGameOver,
@@ -22,7 +23,8 @@ import { getBotCards } from 'bot/bot.service';
 
 const startCardsAnimations = async (
   playerCardsRefs: React.MutableRefObject<Animated.View[]>,
-  cardsIds: string[]
+  cardsIds: string[],
+  game: Game
 ) => {
   console.log('startCardsAnimations');
   await Promise.all(
@@ -34,7 +36,7 @@ const startCardsAnimations = async (
       ) {
         const cardReference = playerCardsRefs?.current[cardId];
         if (cardReference) {
-          await cardReference.startPlayAnimation(index);
+          await cardReference.startPlayAnimation(game.action?.id, index);
         }
       }
     })
@@ -130,7 +132,7 @@ const HeliosDuelTest: FunctionComponent = () => {
     const cardsPlayedIds = cards.map((card) => card.id);
 
     // Start card animation
-    await startCardsAnimations(playerCardsRefs, cardsPlayedIds);
+    await startCardsAnimations(playerCardsRefs, cardsPlayedIds, game);
 
     playSelectedCards(cards);
     // playPresident(cards.map((card) => card.id));
