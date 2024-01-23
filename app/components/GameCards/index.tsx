@@ -23,7 +23,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { currentPlayerCards, sortedCards } from 'app/handlers';
+import { currentPlayerCards, sortedBotCards, sortedCards } from 'app/handlers';
 import CardAnimated from '../CardAnimated';
 import CardCurrentPlayer from '../CardCurrentPlayer';
 import GameCardsSelected from './GameCardsSelected';
@@ -41,7 +41,7 @@ export const MAX_NB_CARDS_BY_LINE = 9;
 const PresidentCurrentPlayerCards: FunctionComponent<
   IPresidentCurrentPlayerCards
 > = ({ game, playerCardsRefs, onCardsSelected, style }) => {
-  const cards = currentPlayerCards(game.players);
+  const cards = sortedCards(game.players);
 
   const [selectedCards, setSelectedCards] = useState<Card[]>([]);
   const [firstSelectedCard, setFirstSelectedCard] = useState<Card>();
@@ -62,6 +62,16 @@ const PresidentCurrentPlayerCards: FunctionComponent<
   const onCardPress = (item: Card) => {
     const firstCardAlreadyPlayed = game.cardsHistory?.[0];
     const cardsOccurrence = getCardOccurrences(cards, item);
+
+    // Select only allowed multiple cards
+    if (
+      !!selectedCards?.length &&
+      selectedCards?.find((card) => card.value !== item.value) &&
+      selectedCards.length <
+        (firstCardAlreadyPlayed?.cardsPlayed?.length || 9999)
+    ) {
+      return;
+    }
 
     // If Card has occurence or must onP played with occurence add the card item on selector
     if (
@@ -124,7 +134,7 @@ const PresidentCurrentPlayerCards: FunctionComponent<
     [cards.length]
   );
 
-  const renderCardList = useCallback(() => {
+  const renderCardList = () => {
     return (
       <FlatList
         contentContainerStyle={styles.cardsContentContainerStyle}
@@ -139,7 +149,7 @@ const PresidentCurrentPlayerCards: FunctionComponent<
         CellRendererComponent={renderPlayCard}
       />
     );
-  }, [cards?.length]);
+  };
 
   return (
     <>
