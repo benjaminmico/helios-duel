@@ -11,7 +11,6 @@ export interface Card {
   value: string;
   position: number;
   isTurnedOff: boolean;
-  isRemoved: boolean;
 }
 
 export interface Player {
@@ -426,7 +425,7 @@ export function canPlayCard(game: Game, player: Player, card: Card): boolean {
     return true;
   }
 
-  const playerCards = player.cards.filter((c) => !c.isRemoved);
+  const playerCards = player.cards;
   const sameCardOccurrences = playerCards.filter(
     (playerCard) => playerCard.position === card.position
   ).length;
@@ -705,16 +704,18 @@ export function changePlayerHand(game: Game): Game {
 
 function removePlayerCards(game: Game, player: Player, cards: Card[]): Game {
   const newGame = game;
+  // Find the index of the player
   const playerIndex = findPlayerIndex(newGame, player);
 
+  // If the player is not found, exit the function
   if (playerIndex === -1) return newGame;
 
   for (const card of cards) {
     const cardIndex = newGame.players[playerIndex].cards.findIndex(
-      (c) => c.id === card.id
+      (c) => c.type === card.type && c.value === card.value
     );
     if (cardIndex > -1) {
-      newGame.players[playerIndex].cards[cardIndex].isRemoved = true;
+      newGame.players[playerIndex].cards.splice(cardIndex, 1);
     }
   }
 
