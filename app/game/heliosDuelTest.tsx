@@ -4,9 +4,10 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../reducers';
 import GameCards from 'app/components/GameCards';
-import { currentPlayerCards, handleSkipTurn } from '../handlers';
+import { currentPlayerCards, handleSkipTurn, sortedCards } from '../handlers';
 import Animated from 'react-native-reanimated';
 import {
+  ActionName,
   Card,
   CardType,
   changePlayerHand,
@@ -22,23 +23,30 @@ import { getBotCards } from 'bot/bot.service';
 
 const startCardsAnimations = async (
   playerCardsRefs: React.MutableRefObject<Animated.View[]>,
-  cardsIds: string[]
+  cardsIds: string[],
+  game: Game
 ) => {
   console.log('startCardsAnimations');
-  await Promise.all(
-    cardsIds.map(async (cardId: string, index: number) => {
-      if (
-        playerCardsRefs &&
-        playerCardsRefs.current &&
-        playerCardsRefs.current[cardId]
-      ) {
-        const cardReference = playerCardsRefs?.current[cardId];
-        if (cardReference) {
-          await cardReference.startPlayAnimation(index);
-        }
-      }
-    })
+  const cards = sortedCards(game.players);
+
+  // Filter out cards that are removed or not in playerCardsRefs
+  const filteredCards = cards.filter(
+    (card) => !card.isRemoved && playerCardsRefs?.current?.[card.id]
   );
+
+  // Create a promise for each card animation
+  const animationPromises = filteredCards.map(async (card, index) => {
+    const cardReference = playerCardsRefs.current[card.id];
+    if (cardReference) {
+      const actionName = cardsIds.includes(card.id)
+        ? ActionName.CARD_PLAYED
+        : undefined;
+      await cardReference.startPlayAnimation(index, actionName);
+    }
+  });
+
+  // Wait for all animations to complete
+  await Promise.all(animationPromises);
 };
 
 const HeliosDuelTest: FunctionComponent = () => {
@@ -113,9 +121,12 @@ const HeliosDuelTest: FunctionComponent = () => {
     }
   };
 
-  React.useEffect(() => {
-    setTimeout(() => playBotTurnIfNecessary(), 100);
-  }, [game.currentPlayer.id]);
+  // React.useEffect(() => {
+  //   if (game.currentPlayer.id === 'bot') {
+  //     console.log('CHANGE USER', game.currentPlayer.id);
+  //     setTimeout(() => playBotTurnIfNecessary(), 100);
+  //   }
+  // }, [game.currentPlayer.id]);
 
   const onCardsSelected = async (cards: Card[]) => {
     setHasPressedCard(true);
@@ -130,9 +141,9 @@ const HeliosDuelTest: FunctionComponent = () => {
     const cardsPlayedIds = cards.map((card) => card.id);
 
     // Start card animation
-    await startCardsAnimations(playerCardsRefs, cardsPlayedIds);
+    await startCardsAnimations(playerCardsRefs, cardsPlayedIds, game);
 
-    playSelectedCards(cards);
+    // playSelectedCards(cards);
     // playPresident(cards.map((card) => card.id));
   };
 

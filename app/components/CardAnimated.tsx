@@ -26,7 +26,7 @@ import CardItem, {
   CARD_PREVIEW_HEIGHT,
   CARD_PREVIEW_WIDTH,
 } from './Card';
-import { Card } from 'gameFunctions';
+import { ActionName, Card } from 'gameFunctions';
 import { AnimationsContext } from 'app/core/AnimationsProvider';
 
 interface ICardAnimatedProps {
@@ -132,6 +132,42 @@ const CardAnimated: FunctionComponent<ICardAnimatedProps> = forwardRef(
                   easing: Easing.out(Easing.cubic),
                 }
               );
+            }
+          );
+          setTimeout(
+            () => {
+              resolve(true);
+            },
+            isPlayingAgainstBot ? 1200 : 500
+          );
+        } catch (error) {
+          console.error('Error on startCardPlayedAnimation in CardAnimated');
+          resolve(true);
+        }
+      });
+    // Animation when card is played.
+    const startReorganizeCardAnimation = (cardIndex: number) =>
+      new Promise((resolve) => {
+        console.log('reorg', cardIndex, maxNbCardsByLine);
+        try {
+          if (cardIndex > maxNbCardsByLine - 1) return;
+          setCardVisible(true);
+          cardRef?.current?.measure(
+            (
+              _x: number,
+              _y: number,
+              _width: number,
+              _height: number,
+              pageX: number,
+              pageY: number
+            ) => {
+              const xOffset = -25;
+
+              const translateX = offsetX.value + xOffset;
+              offsetX.value = withTiming(translateX, {
+                duration: isPlayingAgainstBot ? 1000 : 800,
+                easing: Easing.out(Easing.cubic),
+              });
             }
           );
           setTimeout(
@@ -326,9 +362,16 @@ const CardAnimated: FunctionComponent<ICardAnimatedProps> = forwardRef(
       });
 
     useImperativeHandle(ref, () => ({
-      async startPlayAnimation(cardIndex: number) {
-        setHasPendingAnimations(true);
-        await startCardPlayedAnimation(cardIndex);
+      async startPlayAnimation(cardIndex: number, action?: ActionName) {
+        // setHasPendingAnimations(true);
+        // await startCardPlayedAnimation(cardIndex);
+        switch (action) {
+          case ActionName.CARD_PLAYED:
+            await startCardPlayedAnimation(cardIndex);
+            break;
+          default:
+            await startReorganizeCardAnimation(cardIndex);
+        }
         // if (action === 'CARD_PLAYED') {
         //   await startCardPlayedAnimation();
         // } else if (action === 'HADES_DISCARDED') {
@@ -338,7 +381,7 @@ const CardAnimated: FunctionComponent<ICardAnimatedProps> = forwardRef(
         // } else if (action === 'HYPNOS_TURNED_OFF') {
         //   await startTurningOffAnimation();
         // }
-        setTimeout(() => setHasPendingAnimations(false), 500);
+        // setTimeout(() => setHasPendingAnimations(false), 500);
       },
     }));
 

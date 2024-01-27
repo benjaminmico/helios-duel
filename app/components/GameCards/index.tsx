@@ -18,6 +18,7 @@ import { Card, Game, canPlayCard, getCardOccurrences } from 'gameFunctions';
 import {
   Dimensions,
   FlatList,
+  InteractionManager,
   ListRenderItem,
   StyleSheet,
   View,
@@ -63,12 +64,17 @@ const PresidentCurrentPlayerCards: FunctionComponent<
     const firstCardAlreadyPlayed = game.cardsHistory?.[0];
     const cardsOccurrence = getCardOccurrences(cards, item);
 
+    const cardSelectedForbidden = selectedCards?.find(
+      (card) => card.value !== item.value || card.id === item.id
+    );
+    const cardLenghAuthorized =
+      selectedCards.length <
+      (firstCardAlreadyPlayed?.cardsPlayed?.length || 9999);
     // Select only allowed multiple cards
     if (
       !!selectedCards?.length &&
-      selectedCards?.find((card) => card.value !== item.value) &&
-      selectedCards.length <
-        (firstCardAlreadyPlayed?.cardsPlayed?.length || 9999)
+      cardSelectedForbidden &&
+      cardLenghAuthorized
     ) {
       return;
     }
@@ -110,7 +116,7 @@ const PresidentCurrentPlayerCards: FunctionComponent<
         nbCardsOccurrences={index % 2}
         item={item}
         onCardPress={onCardPress}
-        cardLocked={!canPlay}
+        cardLocked={!canPlay && !item.isRemoved}
         currIndex={index}
         sortedCards={cards || []}
       />
@@ -123,10 +129,12 @@ const PresidentCurrentPlayerCards: FunctionComponent<
   };
 
   const onPlaySelection = () => {
-    hasSelectedCard.current = true;
-    onCardsSelected(selectedCards);
-    setFirstSelectedCard(undefined);
-    setSelectedCards([]);
+    InteractionManager.runAfterInteractions(() => {
+      hasSelectedCard.current = true;
+      onCardsSelected(selectedCards);
+      setFirstSelectedCard(undefined);
+      setSelectedCards([]);
+    });
   };
 
   const renderPlayCard = useCallback(
@@ -134,7 +142,7 @@ const PresidentCurrentPlayerCards: FunctionComponent<
     [cards.length]
   );
 
-  const renderCardList = () => {
+  const renderCardList = useCallback(() => {
     return (
       <FlatList
         contentContainerStyle={styles.cardsContentContainerStyle}
@@ -149,7 +157,7 @@ const PresidentCurrentPlayerCards: FunctionComponent<
         CellRendererComponent={renderPlayCard}
       />
     );
-  };
+  }, []);
 
   return (
     <>
@@ -184,7 +192,7 @@ const PresidentCurrentPlayerCards: FunctionComponent<
   );
 };
 
-export default PresidentCurrentPlayerCards;
+export default React.memo(PresidentCurrentPlayerCards);
 
 const styles = StyleSheet.create({
   flatListContainer: {
