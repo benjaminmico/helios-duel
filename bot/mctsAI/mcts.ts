@@ -13,16 +13,7 @@ export const mctsAI: AIInterface<MCTSAIConfig> = (
   _botPlayerId,
   config
 ): Card[] => {
-  const gameWithCleanedCards = {
-    ...game,
-    players: game.players.map((player) => {
-      return { ...player, cards: player.cards.filter((c) => !c?.isRemoved) };
-    }),
-  };
-
-  const mctsGame = mapGamePresidentDocumentToMctsGame(
-    gameWithCleanedCards as unknown as Game
-  );
+  const mctsGame = mapGamePresidentDocumentToMctsGame(game);
   const { move: bestMove, tree } = mcts(mctsGame, config);
 
   if (bestMove.skip) {
