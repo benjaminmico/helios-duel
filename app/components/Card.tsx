@@ -1,4 +1,4 @@
-import React, { FunctionComponent } from 'react';
+import React, { FunctionComponent, useEffect, useRef } from 'react';
 import {
   Image,
   StyleSheet,
@@ -6,10 +6,21 @@ import {
   View,
   ViewStyle,
   ImageStyle,
+  Animated,
 } from 'react-native';
 import { Card as CardType } from 'gameFunctions';
 import { cardImages } from 'assets/cards';
 import { colors } from 'constants/HeliosTheme';
+import { useSelector } from 'react-redux';
+import { RootState } from 'app/reducers';
+
+export enum CardStatus {
+  PLAYABLE,
+  PREVIEW,
+  DRAW,
+  HIDDEN,
+  SELECT,
+}
 
 interface ICardItemProps {
   card: CardType;
@@ -32,6 +43,20 @@ const Card: FunctionComponent<ICardItemProps> = ({
   style,
   isOpponentCard = false,
 }) => {
+  const game = useSelector((state: RootState) => state);
+
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (type === 'PREVIEW') {
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [type, opacity]);
+
   const getImageSource = (card: CardType) => {
     const imageName = card.type.includes('NORMAL')
       ? `${card.type}_${card.value}`
@@ -82,7 +107,15 @@ const Card: FunctionComponent<ICardItemProps> = ({
         onPress={() => onPress(card)}
       >
         <View style={[styles.cardContainer]}>
-          <Image style={getCardItemStyle()} source={imageSource} />
+          {type === 'PREVIEW' ? (
+            <Animated.Image
+              style={[getCardItemStyle(), { opacity }]}
+              source={imageSource}
+            />
+          ) : (
+            <Image style={getCardItemStyle()} source={imageSource} />
+          )}
+
           {isLocked && <View style={styles.cardOverlay} />}
           {card.isTurnedOff && !isOpponentCard && renderGrayscaleOverlay()}
         </View>
@@ -152,6 +185,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borders.cards,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'white',
   },
   containerValidation: {
     width: CARD_VALIDATION_WIDTH,

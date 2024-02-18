@@ -134,12 +134,9 @@ const CardAnimated: FunctionComponent<ICardAnimatedProps> = forwardRef(
               );
             }
           );
-          setTimeout(
-            () => {
-              resolve(true);
-            },
-            isPlayingAgainstBot ? 1200 : 500
-          );
+          setTimeout(() => {
+            resolve(true);
+          }, 13000);
         } catch (error) {
           console.error('Error on startCardPlayedAnimation in CardAnimated');
           resolve(true);

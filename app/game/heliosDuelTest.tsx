@@ -17,7 +17,7 @@ import {
   playCard,
 } from 'gameFunctions';
 import { StatusBar } from 'expo-status-bar';
-import { actionPlayGame } from 'app/actions/gameActions';
+import { actionCurrentCard, actionPlayGame } from 'app/actions/gameActions';
 import { getBotCards } from 'bot/bot.service';
 
 const startCardsAnimations = async (
@@ -130,10 +130,9 @@ const HeliosDuelTest: FunctionComponent = () => {
     const cardsPlayedIds = cards.map((card) => card.id);
 
     // Start card animation
-    await startCardsAnimations(playerCardsRefs, cardsPlayedIds);
+    startCardsAnimations(playerCardsRefs, cardsPlayedIds);
 
-    playSelectedCards(cards);
-    // playPresident(cards.map((card) => card.id));
+    setTimeout(() => playSelectedCards(cards), 1400);
   };
 
   return (

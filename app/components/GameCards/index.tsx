@@ -28,6 +28,7 @@ import CardAnimated from '../CardAnimated';
 import CardCurrentPlayer from '../CardCurrentPlayer';
 import GameCardsSelected from './GameCardsSelected';
 import GameCardsOpponent from './GameCardsOpponent';
+import CardCurrentPlayed from './CardCurrentPlayed';
 
 interface IPresidentCurrentPlayerCards {
   game: Game;
@@ -104,7 +105,6 @@ const PresidentCurrentPlayerCards: FunctionComponent<
           })
         }
         isPlayingAgainstBot
-        // shouldPlay={!hasSelectedCard.current && shouldPlay}
         shouldPlay={canPlay}
         maxNbCardsByLine={MAX_NB_CARDS_BY_LINE}
         nbCardsOccurrences={index % 2}
@@ -180,6 +180,7 @@ const PresidentCurrentPlayerCards: FunctionComponent<
           selectedCards={selectedCards}
         />
       )}
+      <CardCurrentPlayed game={game} />
     </>
   );
 };
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
     right: 10,
     alignSelf: 'center',
     marginLeft: 10,
-    zIndex: 999999,
+    zIndex: 9,
   },
   cancelButton: { alignSelf: 'center', marginTop: -10 },
 });
