@@ -1,6 +1,6 @@
 import React, { FunctionComponent } from 'react';
 import { Dimensions, FlatList, StyleSheet, View } from 'react-native';
-import Card, { CARD_VALIDATION_WIDTH } from '../Card';
+import Card, { CARD_VALIDATION_WIDTH, CardStatus } from '../Card';
 import { Card as CardType } from 'gameFunctions';
 import { Image } from 'expo-image';
 import ButtonAction from '../ButtonAction';
@@ -33,7 +33,7 @@ const GameCardsSelected: FunctionComponent<ICardGameCardsSelected> = ({
             <Card
               enabled={false}
               card={item}
-              type='VALIDATION'
+              status={CardStatus.VALIDATION}
               // eslint-disable-next-line react-native/no-inline-styles
               style={{
                 ...styles.selectedCard,

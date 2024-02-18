@@ -19,6 +19,7 @@ export enum CardStatus {
   PREVIEW,
   DRAW,
   HIDDEN,
+  VALIDATION,
   SELECT,
 }
 
@@ -28,7 +29,7 @@ interface ICardItemProps {
   isHidden?: boolean;
   enabled?: boolean;
   isLocked?: boolean;
-  type?: 'PLAYABLE' | 'PREVIEW' | 'DRAW' | 'HIDDEN' | 'SELECT' | 'VALIDATION';
+  status?: CardStatus;
   style?: ViewStyle;
   isOpponentCard?: boolean;
 }
@@ -39,7 +40,7 @@ const Card: FunctionComponent<ICardItemProps> = ({
   isHidden = false,
   enabled = false,
   isLocked = false,
-  type = 'PLAYABLE',
+  status = CardStatus.PLAYABLE,
   style,
   isOpponentCard = false,
 }) => {
@@ -48,14 +49,14 @@ const Card: FunctionComponent<ICardItemProps> = ({
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (type === 'PREVIEW') {
+    if (status === CardStatus.PREVIEW) {
       Animated.timing(opacity, {
         toValue: 1,
         duration: 200,
         useNativeDriver: true,
       }).start();
     }
-  }, [type, opacity]);
+  }, [status, opacity]);
 
   const getImageSource = (card: CardType) => {
     const imageName = card.type.includes('NORMAL')
@@ -65,26 +66,26 @@ const Card: FunctionComponent<ICardItemProps> = ({
   };
 
   const getCardItemStyle = () => {
-    if (type === 'PLAYABLE') {
+    if (status === CardStatus.PLAYABLE) {
       return isLocked
         ? { ...styles.containerPlayable, ...styles.containerLocked }
         : styles.containerPlayable;
     }
-    if (type === 'PREVIEW') {
+    if (status === CardStatus.PREVIEW) {
       return isLocked
         ? { ...styles.containerPreview, ...styles.containerLocked }
         : styles.containerPreview;
     }
-    if (type === 'HIDDEN') {
+    if (status === CardStatus.HIDDEN) {
       return styles.containerHidden;
     }
-    if (type === 'SELECT') {
+    if (status === CardStatus.SELECT) {
       return styles.containerSelect;
     }
-    if (type === 'VALIDATION') {
+    if (status === CardStatus.VALIDATION) {
       return styles.containerValidation;
     }
-    if (type === 'DRAW') {
+    if (status === CardStatus.DRAW) {
       return isLocked
         ? { ...styles.containerDraw, ...styles.containerLocked }
         : styles.containerDraw;
@@ -107,7 +108,7 @@ const Card: FunctionComponent<ICardItemProps> = ({
         onPress={() => onPress(card)}
       >
         <View style={[styles.cardContainer]}>
-          {type === 'PREVIEW' ? (
+          {status === CardStatus.PREVIEW ? (
             <Animated.Image
               style={[getCardItemStyle(), { opacity }]}
               source={imageSource}

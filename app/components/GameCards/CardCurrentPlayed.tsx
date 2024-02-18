@@ -1,7 +1,7 @@
 import React from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 import { Card as CardType, Game } from 'gameFunctions';
-import Card from '../Card';
+import Card, { CardStatus } from '../Card';
 
 interface CardCurrentPlayedProps {
   game: Game;
@@ -19,7 +19,7 @@ const CardCurrentPlayed: React.FC<CardCurrentPlayedProps> = ({ game }) => {
         card={card}
         onPress={() => null}
         isLocked={false}
-        type='PREVIEW'
+        status={CardStatus.PREVIEW}
         style={styles.cardItem}
       />
     );

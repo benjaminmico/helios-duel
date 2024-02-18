@@ -26,6 +26,7 @@ import CardItem, {
   CARD_PLAYABLE_WIDTH,
   CARD_PREVIEW_HEIGHT,
   CARD_PREVIEW_WIDTH,
+  CardStatus,
 } from './Card';
 import { Card as CardType } from 'gameFunctions';
 import { AnimationsContext } from 'app/core/AnimationsProvider';
@@ -382,7 +383,7 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
           onPress={() => {}}
           style={cartItemStyle}
           isHidden={cardHidden}
-          type='HIDDEN'
+          status={CardStatus.HIDDEN}
           isOpponentCard
         />
       </Animated.View>
