@@ -173,22 +173,18 @@ const CardAnimatedOpponent: FunctionComponent<ICardAnimatedOpponentProps> =
               const windowWidth = Dimensions.get('window').width;
               const windowHeight = Dimensions.get('window').height;
 
-              const translateX = Math.ceil(
-                windowWidth / 2 -
-                  pageX -
-                  2 +
-                  5 +
-                  (currIndex === 0
-                    ? 10 - CARD_PREVIEW_WIDTH / 2
-                    : CARD_PREVIEW_WIDTH / 2 - 20)
-              );
+              const xOffset = cardIndex * 25;
+
+              const translateX =
+                Math.ceil(windowWidth / 2 - pageX + 29) + xOffset;
+
               const translateY = 445;
 
               offsetX.value = withTiming(translateX, {
                 duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
-              offsetY.value = withTiming(445, {
+              offsetY.value = withTiming(translateY, {
                 duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
@@ -352,6 +348,7 @@ const CardAnimatedOpponent: FunctionComponent<ICardAnimatedOpponentProps> =
 
     useImperativeHandle(ref, () => ({
       async startPlayAnimation(cardIndex: number) {
+        setCardHidden(false);
         setHasPendingAnimations(true);
         await startCardPlayedAnimation(cardIndex);
         // if (action === 'CARD_PLAYED') {
@@ -372,7 +369,7 @@ const CardAnimatedOpponent: FunctionComponent<ICardAnimatedOpponentProps> =
     };
     return (
       <Animated.View style={animatedStyles} ref={cardRef}>
-        <Card
+        <CardItem
           enabled={false}
           card={item}
           onPress={() => {}}

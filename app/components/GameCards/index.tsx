@@ -167,7 +167,12 @@ const PresidentCurrentPlayerCards: FunctionComponent<
       return;
     }
 
-    // If Card has occurrence or must on played with occurrence add the card item on selector
+    // cannot select multiple cards with different values
+    if (selectedCards?.length && item.value !== selectedCards?.[0]?.value) {
+      return;
+    }
+
+    // if Card has occurrence or must on played with occurrence add the card item on selector
     if (
       firstCardAlreadyPlayed?.cardsPlayed.length > 1 ||
       cardsOccurrence.length > 1
@@ -203,8 +208,8 @@ const PresidentCurrentPlayerCards: FunctionComponent<
         game={game}
       />
       <GameCardsOpponentPlayer
-        opponentPlayerCardsRefs={opponentPlayerCardsRefs}
         cards={opponentCards}
+        opponentPlayerCardsRefs={opponentPlayerCardsRefs}
       />
       <GameCardsSelected
         onCancelCardSelection={onCancelCardSelection}

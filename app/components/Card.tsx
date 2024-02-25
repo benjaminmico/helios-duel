@@ -15,12 +15,12 @@ import { useSelector } from 'react-redux';
 import { RootState } from 'app/reducers';
 
 export enum CardStatus {
-  PLAYABLE,
-  PREVIEW,
-  DRAW,
-  HIDDEN,
-  VALIDATION,
-  SELECT,
+  PLAYABLE = 'PLAYABLE',
+  PREVIEW = 'PREVIEW',
+  DRAW = 'DRAW',
+  HIDDEN = 'HIDDEN',
+  VALIDATION = 'VALIDATIOn',
+  SELECT = 'SELECT',
 }
 
 interface ICardItemProps {
@@ -166,6 +166,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borders.cards,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'white',
   },
   containerSelect: {
     width: CARD_HIDDEN_WIDTH,

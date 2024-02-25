@@ -98,6 +98,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+    padding: 16,
   },
   input: {
     flex: 1,

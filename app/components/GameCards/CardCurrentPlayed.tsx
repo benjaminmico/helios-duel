@@ -12,7 +12,7 @@ const CardCurrentPlayed: React.FC<CardCurrentPlayedProps> = ({ game }) => {
 
   if (!cardsPlayed) return;
 
-  return cardsPlayed?.map((card) => {
+  return cardsPlayed?.map((card, index) => {
     return (
       <Card
         key={card.id}
@@ -20,7 +20,10 @@ const CardCurrentPlayed: React.FC<CardCurrentPlayedProps> = ({ game }) => {
         onPress={() => null}
         isLocked={false}
         status={CardStatus.PREVIEW}
-        style={styles.cardItem}
+        style={[
+          styles.cardItem,
+          { left: index * 50 }, // Dynamic left offset based on index
+        ]}
       />
     );
   });
