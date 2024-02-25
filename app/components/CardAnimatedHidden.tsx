@@ -28,7 +28,7 @@ import CardItem, {
   CARD_PREVIEW_WIDTH,
   CardStatus,
 } from './Card';
-import { Card as CardType } from 'gameFunctions';
+import { ActionName, Card as CardType } from 'gameFunctions';
 import { AnimationsContext } from 'app/core/AnimationsProvider';
 import Card from './Card';
 
@@ -159,6 +159,7 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
     const startCardPlayedAnimation = () =>
       new Promise((resolve) => {
         try {
+          console.log('JJJJJJ');
           cardRef?.current?.measure(
             (
               x: number,
@@ -210,10 +211,10 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
           );
           setTimeout(() => {
             setCardHidden(false);
-          }, 500);
+          }, 4000);
           setTimeout(() => {
             resolve(true);
-          }, 700);
+          }, 4000);
         } catch (error) {
           console.error(
             'Error on startCardPlayedAnimation in AnimatedHiddenCardItem'
@@ -353,21 +354,26 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
       });
 
     useImperativeHandle(ref, () => ({
-      async startPlayAnimation(action: string) {
+      async startPlayAnimation(action: ActionName) {
         setHasPendingAnimations(true);
-        if (
-          action === 'CARD_PLAYED' ||
-          action === 'ARTEMIS' ||
-          action === 'HYPNOS' ||
-          action === 'HERMES' ||
-          action === 'HADES'
-        ) {
-          await startCardPlayedAnimation();
-        } else if (action === 'HADES_DISCARDED') {
-          await startCardToDiscardAnimation();
-        } else if (action === 'ARTEMIS_GIVED') {
-          await startCardGivenAnimation();
-        }
+        console.log('CCCCCDDDD');
+
+        await startCardPlayedAnimation();
+
+        // if (
+        //   action === ActionName.CARD_PLAYED ||
+        //   action === ActionName.ARTEMIS ||
+        //   action === ActionName.HYPNOS ||
+        //   action === ActionName.HADES ||
+        //   action === ActionName.ARTEMIS_GIVED
+        // ) {
+        //   await startCardPlayedAnimation();
+        // } else if (action === ActionName.HADES_DISCARDED) {
+        //   await startCardToDiscardAnimation();
+        // }
+        // else if (action === ActionName.ARTEMIS_GIVED) {
+        //   await startCardGivenAnimation();
+        // }
         setTimeout(() => setHasPendingAnimations(false), 500);
       },
     }));

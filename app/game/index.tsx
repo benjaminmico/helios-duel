@@ -25,8 +25,6 @@ const StartScreen: React.FC<Props> = () => {
     BotDifficulty.HARD
   );
 
-  const game = useSelector((state: RootState) => state.game);
-
   // Function to handle starting the game
   const handleStartGame = () => {
     if (!playerName) {

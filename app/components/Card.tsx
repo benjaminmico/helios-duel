@@ -44,15 +44,13 @@ const Card: FunctionComponent<ICardItemProps> = ({
   style,
   isOpponentCard = false,
 }) => {
-  const game = useSelector((state: RootState) => state);
-
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (status === CardStatus.PREVIEW) {
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 200,
+        duration: 800,
         useNativeDriver: true,
       }).start();
     }

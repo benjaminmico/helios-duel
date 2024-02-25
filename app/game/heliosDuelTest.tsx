@@ -24,16 +24,12 @@ const startCardsAnimations = async (
   playerCardsRefs: React.MutableRefObject<Animated.View[]>,
   cardsIds: string[]
 ) => {
-  console.log('startCardsAnimations');
   await Promise.all(
-    cardsIds.map(async (cardId: string, index: number) => {
-      if (
-        playerCardsRefs &&
-        playerCardsRefs.current &&
-        playerCardsRefs.current[cardId]
-      ) {
+    cardsIds.map(async (cardId: any, index: number) => {
+      if (playerCardsRefs?.current?.[cardId]) {
         const cardReference = playerCardsRefs?.current[cardId];
         if (cardReference) {
+          //@ts-ignore
           await cardReference.startPlayAnimation(index);
         }
       }
@@ -47,8 +43,6 @@ const HeliosDuelTest: FunctionComponent = () => {
   const [selectedCardOccurences, setSelectedCardOccurences] =
     useState<number>();
   const [hasPressedCard, setHasPressedCard] = useState<boolean>(false);
-
-  console.log('gggg', game.currentPlayer.id);
 
   const dispatch = useDispatch();
 
@@ -144,6 +138,7 @@ const HeliosDuelTest: FunctionComponent = () => {
             position: 'absolute',
             bottom: 0,
             alignSelf: 'center',
+            backgroundColor: 'red',
           }}
           playerCardsRefs={playerCardsRefs}
           game={game}

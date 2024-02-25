@@ -18,6 +18,8 @@ const GameCardsSelected: FunctionComponent<ICardGameCardsSelected> = ({
   onCancelCardSelection,
   onPlaySelection,
 }) => {
+  if (!selectedCards?.length) return;
+
   return (
     <View style={{ width: '100%' }}>
       <View

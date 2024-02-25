@@ -116,8 +116,6 @@ const GameScreen: React.FC = () => {
     }
   };
 
-  console.log({ game });
-
   const playBotTurnIfNecessary = async () => {
     if (currentPlayer.id === 'bot') {
       const botCards = await getBotCards(game, currentPlayer.id);

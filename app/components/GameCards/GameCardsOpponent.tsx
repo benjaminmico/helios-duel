@@ -29,7 +29,9 @@ const GameCardsOpponent: FunctionComponent<IGameCardsOpponent> = ({
   hidePlayedCards,
   startNewCardFromPileAnimation,
 }) => {
-  const [opponentCards, setOpponentCards] = useState<Card[]>([]);
+  const [opponentCards, setOpponentCards] = useState<Card[]>(
+    getPlayer(game.players, 'bot')?.cards
+  );
   // const [opponentAvatar, setOpponentAvatar] = useState<String>('');
   const opponentCardsRefs = useRef([]);
   const pendingAnimation = useRef<boolean>(false);
@@ -39,19 +41,19 @@ const GameCardsOpponent: FunctionComponent<IGameCardsOpponent> = ({
   const updateOpponentCards = useCallback(
     async (
       playedCardsIds: string[],
-      newCards: Card[],
       action: ActionName,
       isCardPlayed: boolean
     ) => {
       pendingAnimation.current = true;
-      if (isCardPlayed) {
-        hidePlayedCards(true);
-      }
-      await startCardsAnimations(playedCardsIds, action);
+      // if (isCardPlayed) {
+      //   hidePlayedCards(true);
+      // }
+      console.log('playedCardsIds', action);
+      await startCardsAnimations(playedCardsIds, action, game);
       if (isCardPlayed) {
         hidePlayedCards(false);
       }
-      setOpponentCards(newCards);
+      // setOpponentCards(newCards);
       pendingAnimation.current = false;
     },
     [hidePlayedCards]
@@ -70,28 +72,29 @@ const GameCardsOpponent: FunctionComponent<IGameCardsOpponent> = ({
   );
 
   useEffect(() => {
-    const opponentsCards = sortedBotCards(game.players);
-    console.log('opponentsCards', opponentsCards?.length);
-    if (!opponentsCards || !opponentsCards.length) {
-      return;
+    const opponent = getPlayer(game.players, 'bot');
+    if (!opponent) {
+      return null;
     }
 
-    setOpponentCards(opponentsCards);
+    const playedCards =
+      game.cardsHistory?.length &&
+      game.cardsHistory[0].playerId === opponent.id &&
+      game.cardsHistory[0].cardsPlayed;
+
+    if (!playedCards) return;
+
+    updateOpponentCards(
+      playedCards.map((c) => c.id),
+      game.action?.id as ActionName,
+      true
+    );
 
     // if (!pendingAnimation?.current) {
     //   setOpponentCards((currentOpponentCards) => {
-    //     const playedCards = (currentOpponentCards || [])
-    //       .filter(
-    //         (filteredCard) =>
-    //           !opponentsCards.find(
-    //             (opponentsCard) =>
-    //               opponentsCard.id === filteredCard.id &&
-    //               opponentsCard.type === filteredCard.type
-    //           )
-    //       )
-    //       .map((card) => card.type);
+    //     const playedCards = game.cardsHistory[0].cardsPlayedgame.cardsHistory[0].cardsPlayed;
 
-    //     console.log('playedCards', playedCards?.length);
+    //     console.log('playedCaards', playedCards);
 
     //     const isCardPlayed =
     //       (game.action?.id === ActionName.CARD_PLAYED ||
@@ -100,8 +103,8 @@ const GameCardsOpponent: FunctionComponent<IGameCardsOpponent> = ({
     //         game.action?.id === ActionName.HADES) &&
     //       game.currentPlayer.id !== userPlayerId;
 
+    //     console.log('isCardPlayed', isCardPlayed);
     //     if (
-    //       game.action?.id &&
     //       playedCards.length > 0 &&
     //       (isCardPlayed ||
     //         (game.action?.id === ActionName.HADES_DISCARDED &&
@@ -111,36 +114,39 @@ const GameCardsOpponent: FunctionComponent<IGameCardsOpponent> = ({
     //     ) {
     //       updateOpponentCards(
     //         playedCards,
-    //         opponentCards,
+    //         opponentData.cards,
     //         game.action?.id,
     //         isCardPlayed
     //       );
     //       return currentOpponentCards;
     //     }
 
-    //     const addedCards = (opponentCards || []).filter(
-    //       (filteredCard) =>
+    //     const addedCards = (opponentData.cards || []).filter(
+    //       (c) =>
     //         !currentOpponentCards.find(
-    //           (card) =>
-    //             card.id === filteredCard.id && card.type === filteredCard.type
+    //           (el) => el.id === c.id && el.value === c.value
     //         )
     //     );
     //     if (
     //       addedCards.length > 0 &&
     //       game.action?.id === ActionName.SKIP_WITH_DICE_ROLL
     //     ) {
-    //       updateOpponentNewCard(addedCards[0], opponentCards);
+    //       updateOpponentNewCard(addedCards[0], opponentData.cards);
     //       return currentOpponentCards;
     //     }
 
-    //     return opponentCards;
-    //   });
-    // }
+    //     return opponentData.cards;
   }, [game, updateOpponentCards, updateOpponentNewCard, userPlayerId]);
 
-  const startCardsAnimations = async (cardsIds: string[], action: string) => {
+  const startCardsAnimations = async (
+    cardsIds: string[],
+    action: string,
+    game: Game
+  ) => {
+    console.log('CCCCC', cardsIds);
     await Promise.all(
       cardsIds.map(async (cardId: string) => {
+        console.log('BBBB', opponentCardsRefs.current[cardId]);
         if (
           opponentCardsRefs &&
           opponentCardsRefs.current &&
@@ -157,6 +163,7 @@ const GameCardsOpponent: FunctionComponent<IGameCardsOpponent> = ({
     );
   };
 
+  console.log('OPPONENT CARDS', opponentCards?.length);
   return (
     <View style={styles.list}>
       <FlatList
