@@ -32,12 +32,12 @@ import { ActionName, Card as CardType } from 'gameFunctions';
 import { AnimationsContext } from 'app/core/AnimationsProvider';
 import Card from './Card';
 
-interface IAnimatedHiddenCardItemProps {
+interface ICardAnimatedOpponentProps {
   item: CardType;
   currIndex: number;
 }
 
-const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
+const CardAnimatedOpponent: FunctionComponent<ICardAnimatedOpponentProps> =
   forwardRef(({ item, currIndex }, ref) => {
     const [cardHidden, setCardHidden] = useState(true);
     const cardIsTurnedOff = useRef(false);
@@ -87,7 +87,9 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
                       ? 10 - CARD_PREVIEW_WIDTH / 2
                       : CARD_PREVIEW_WIDTH / 2 - 20)
                 );
-                const translateY = Math.ceil(windowHeight / 3 - 2 * pageY - 40);
+                const translateY = Math.ceil(
+                  windowHeight / 2 - pageY - CARD_PREVIEW_HEIGHT / 2 + 12
+                );
 
                 offsetX.value = withRepeat(
                   withTiming(translateX, {
@@ -131,7 +133,7 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
             }, 2000);
           } catch (error) {
             console.error(
-              'Error on startTurningOffAnimation in AnimatedHiddenCardItem'
+              'Error on startTurningOffAnimation in CardAnimatedOpponent'
             );
             resolve(true);
           }
@@ -156,10 +158,9 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
     }, [item, startTurningOffAnimation]);
 
     // Animation when card is played.
-    const startCardPlayedAnimation = () =>
+    const startCardPlayedAnimation = (cardIndex: number) =>
       new Promise((resolve) => {
         try {
-          console.log('JJJJJJ');
           cardRef?.current?.measure(
             (
               x: number,
@@ -181,29 +182,27 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
                     ? 10 - CARD_PREVIEW_WIDTH / 2
                     : CARD_PREVIEW_WIDTH / 2 - 20)
               );
-              const translateY = Math.ceil(
-                windowHeight / 2 - pageY - CARD_PREVIEW_HEIGHT / 2 + 20
-              );
+              const translateY = 445;
 
               offsetX.value = withTiming(translateX, {
-                duration: 700,
+                duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
-              offsetY.value = withTiming(translateY, {
-                duration: 700,
+              offsetY.value = withTiming(445, {
+                duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
               scaleX.value = withTiming(
                 CARD_PREVIEW_WIDTH / CARD_HIDDEN_WIDTH,
                 {
-                  duration: 700,
+                  duration: 1000,
                   easing: Easing.out(Easing.cubic),
                 }
               );
               scaleY.value = withTiming(
                 CARD_PREVIEW_HEIGHT / CARD_HIDDEN_HEIGHT,
                 {
-                  duration: 700,
+                  duration: 1000,
                   easing: Easing.out(Easing.cubic),
                 }
               );
@@ -211,13 +210,11 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
           );
           setTimeout(() => {
             setCardHidden(false);
-          }, 4000);
-          setTimeout(() => {
             resolve(true);
-          }, 4000);
+          }, 1000);
         } catch (error) {
           console.error(
-            'Error on startCardPlayedAnimation in AnimatedHiddenCardItem'
+            'Error on startCardPlayedAnimation in CardAnimatedOpponent'
           );
 
           resolve(true);
@@ -284,7 +281,7 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
           }, 3000);
         } catch (error) {
           console.error(
-            'Error on startCardGivenAnimation in AnimatedHiddenCardItem'
+            'Error on startCardGivenAnimation in CardAnimatedOpponent'
           );
           resolve(true);
         }
@@ -346,7 +343,7 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
           }, 3000);
         } catch (error) {
           console.error(
-            'Error on startCardToDiscardAnimation in AnimatedHiddenCardItem'
+            'Error on startCardToDiscardAnimation in CardAnimatedOpponent'
           );
 
           resolve(true);
@@ -354,25 +351,17 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
       });
 
     useImperativeHandle(ref, () => ({
-      async startPlayAnimation(action: ActionName) {
+      async startPlayAnimation(cardIndex: number) {
         setHasPendingAnimations(true);
-        console.log('CCCCCDDDD');
-
-        await startCardPlayedAnimation();
-
-        // if (
-        //   action === ActionName.CARD_PLAYED ||
-        //   action === ActionName.ARTEMIS ||
-        //   action === ActionName.HYPNOS ||
-        //   action === ActionName.HADES ||
-        //   action === ActionName.ARTEMIS_GIVED
-        // ) {
+        await startCardPlayedAnimation(cardIndex);
+        // if (action === 'CARD_PLAYED') {
         //   await startCardPlayedAnimation();
-        // } else if (action === ActionName.HADES_DISCARDED) {
+        // } else if (action === 'HADES_DISCARDED') {
         //   await startCardToDiscardAnimation();
-        // }
-        // else if (action === ActionName.ARTEMIS_GIVED) {
+        // } else if (action === 'ARTEMIS_GIVED') {
         //   await startCardGivenAnimation();
+        // } else if (action === 'HYPNOS_TURNED_OFF') {
+        //   await startTurningOffAnimation();
         // }
         setTimeout(() => setHasPendingAnimations(false), 500);
       },
@@ -396,4 +385,4 @@ const AnimatedHiddenCardItem: FunctionComponent<IAnimatedHiddenCardItemProps> =
     );
   });
 
-export default AnimatedHiddenCardItem;
+export default CardAnimatedOpponent;

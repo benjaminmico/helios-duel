@@ -10,7 +10,7 @@ import CardCurrentPlayer from '../CardCurrentPlayer';
 
 interface GameCardsDefaultPlayerProps {
   cards: Card[];
-  playerCardsRefs: React.MutableRefObject<Animated.View[]>;
+  defaultPlayerCardsRefs: React.MutableRefObject<Animated.View[]>;
   onCardPress: (card: Card) => void;
   MAX_NB_CARDS_BY_LINE: number;
   game: Game;
@@ -18,7 +18,7 @@ interface GameCardsDefaultPlayerProps {
 
 const GameCardsDefaultPlayer: React.FC<GameCardsDefaultPlayerProps> = ({
   cards,
-  playerCardsRefs,
+  defaultPlayerCardsRefs,
   onCardPress,
   MAX_NB_CARDS_BY_LINE,
   game,
@@ -29,7 +29,7 @@ const GameCardsDefaultPlayer: React.FC<GameCardsDefaultPlayerProps> = ({
     return {
       ...styles.container,
       transform: [{ translateY: offsetY.value }],
-      zIndex: 1000,
+      zIndex: 2,
     };
   });
 
@@ -45,8 +45,8 @@ const GameCardsDefaultPlayer: React.FC<GameCardsDefaultPlayerProps> = ({
       <CardAnimated
         // @ts-ignore
         ref={(ref) =>
-          (playerCardsRefs.current = {
-            ...(playerCardsRefs.current || {}),
+          (defaultPlayerCardsRefs.current = {
+            ...(defaultPlayerCardsRefs.current || {}),
             [item.id]: ref,
           })
         }
