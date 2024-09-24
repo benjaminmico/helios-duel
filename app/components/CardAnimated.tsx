@@ -229,24 +229,24 @@ const CardAnimated: FunctionComponent<ICardAnimatedProps> = forwardRef(
               const translateY = Math.ceil(windowHeight / 5 - pageY);
 
               offsetX.value = withTiming(translateX, {
-                duration: 3000,
+                duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
               offsetY.value = withTiming(translateY, {
-                duration: 3000,
+                duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
               scaleX.value = withDelay(
                 2000,
                 withTiming(CARD_HIDDEN_WIDTH / CARD_PLAYABLE_WIDTH, {
-                  duration: 1000,
+                  duration: 500,
                   easing: Easing.out(Easing.cubic),
                 })
               );
               scaleY.value = withDelay(
                 2000,
                 withTiming(CARD_HIDDEN_HEIGHT / CARD_PLAYABLE_HEIGHT, {
-                  duration: 1000,
+                  duration: 500,
                   easing: Easing.out(Easing.cubic),
                 })
               );
@@ -290,24 +290,24 @@ const CardAnimated: FunctionComponent<ICardAnimatedProps> = forwardRef(
               );
 
               offsetX.value = withTiming(translateX, {
-                duration: 3000,
+                duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
               offsetY.value = withTiming(translateY, {
-                duration: 3000,
+                duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
               scaleX.value = withDelay(
                 1000,
                 withTiming(CARD_DRAW_WIDTH / CARD_PLAYABLE_WIDTH, {
-                  duration: 1000,
+                  duration: 500,
                   easing: Easing.out(Easing.cubic),
                 })
               );
               scaleY.value = withDelay(
                 1000,
                 withTiming(CARD_DRAW_HEIGHT / CARD_PLAYABLE_HEIGHT, {
-                  duration: 1000,
+                  duration: 500,
                   easing: Easing.out(Easing.cubic),
                 })
               );

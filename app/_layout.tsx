@@ -53,8 +53,6 @@ const styles = StyleSheet.create({
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
-  console.log('colorScheme', colorScheme);
-
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>

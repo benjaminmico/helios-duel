@@ -9,12 +9,14 @@ const { width: WINDOW_WIDTH, height: WINDOW_HEIGHT } = Dimensions.get('window');
 
 interface ICardGameCardsSelected {
   selectedCards: CardType[];
+  canPlaySelectedCards: boolean;
   onCancelCardSelection: () => void;
   onPlaySelection: () => void;
 }
 
 const GameCardsSelected: FunctionComponent<ICardGameCardsSelected> = ({
   selectedCards,
+  canPlaySelectedCards,
   onCancelCardSelection,
   onPlaySelection,
 }) => {
@@ -54,12 +56,14 @@ const GameCardsSelected: FunctionComponent<ICardGameCardsSelected> = ({
         size='SMALL'
         onPress={onCancelCardSelection}
       />
-      <ButtonAction
-        label='OK'
-        size='SMALL'
-        onPress={onPlaySelection}
-        style={{ alignSelf: 'flex-end' }}
-      />
+      {canPlaySelectedCards && (
+        <ButtonAction
+          label='OK'
+          size='SMALL'
+          onPress={onPlaySelection}
+          style={{ alignSelf: 'flex-end' }}
+        />
+      )}
     </View>
   );
 };

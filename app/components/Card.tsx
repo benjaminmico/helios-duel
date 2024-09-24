@@ -19,8 +19,9 @@ export enum CardStatus {
   PREVIEW = 'PREVIEW',
   DRAW = 'DRAW',
   HIDDEN = 'HIDDEN',
-  VALIDATION = 'VALIDATIOn',
+  VALIDATION = 'VALIDATION',
   SELECT = 'SELECT',
+  ARTEMIS_SELECT = 'ARTEMIS_SELECT',
 }
 
 interface ICardItemProps {
@@ -50,7 +51,7 @@ const Card: FunctionComponent<ICardItemProps> = ({
     if (status === CardStatus.PREVIEW) {
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 800,
+        duration: 10,
         useNativeDriver: true,
       }).start();
     }
@@ -82,6 +83,9 @@ const Card: FunctionComponent<ICardItemProps> = ({
     }
     if (status === CardStatus.VALIDATION) {
       return styles.containerValidation;
+    }
+    if (status === CardStatus.ARTEMIS_SELECT) {
+      return styles.containerArtemisSelect;
     }
     if (status === CardStatus.DRAW) {
       return isLocked
@@ -171,6 +175,15 @@ const styles = StyleSheet.create({
   containerSelect: {
     width: CARD_HIDDEN_WIDTH,
     height: CARD_HIDDEN_HEIGHT,
+    borderWidth: 0.5,
+    borderRadius: 8,
+    borderColor: colors.borders.cards,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  containerArtemisSelect: {
+    width: CARD_DRAW_WIDTH,
+    height: CARD_DRAW_HEIGHT,
     borderWidth: 0.5,
     borderRadius: 8,
     borderColor: colors.borders.cards,

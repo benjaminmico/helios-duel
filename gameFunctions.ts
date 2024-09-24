@@ -200,44 +200,9 @@ for (const suit of suits) {
 const specialCards: Card[] = [
   {
     id: uuidv4(),
-    type: CardType.ARTEMIS,
-    value: 'ARTEMIS',
-    position: 16,
-    isTurnedOff: false,
-  },
-  {
-    id: uuidv4(),
-    type: CardType.ARTEMIS,
-    value: 'ARTEMIS',
-    position: 16,
-    isTurnedOff: false,
-  },
-  {
-    id: uuidv4(),
-    type: CardType.ARTEMIS,
-    value: 'ARTEMIS',
-    position: 16,
-    isTurnedOff: false,
-  },
-  {
-    id: uuidv4(),
-    type: CardType.ARTEMIS,
-    value: 'ARTEMIS',
-    position: 16,
-    isTurnedOff: false,
-  },
-  {
-    id: uuidv4(),
-    type: CardType.ARTEMIS,
-    value: 'ARTEMIS',
-    position: 16,
-    isTurnedOff: false,
-  },
-  {
-    id: uuidv4(),
-    type: CardType.ARTEMIS,
-    value: 'ARTEMIS',
-    position: 16,
+    type: CardType.HYPNOS,
+    value: 'HYPNOS',
+    position: 15,
     isTurnedOff: false,
   },
   {
@@ -245,6 +210,49 @@ const specialCards: Card[] = [
     type: CardType.HYPNOS,
     value: 'HYPNOS',
     position: 15,
+    isTurnedOff: false,
+  },
+
+  {
+    id: uuidv4(),
+    type: CardType.ARTEMIS,
+    value: 'ARTEMIS',
+    position: 16,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.ARTEMIS,
+    value: 'ARTEMIS',
+    position: 16,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.HADES,
+    value: 'HADES',
+    position: 17,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.HADES,
+    value: 'HADES',
+    position: 17,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.JOKER,
+    value: 'JOKER',
+    position: 18,
+    isTurnedOff: false,
+  },
+  {
+    id: uuidv4(),
+    type: CardType.JOKER,
+    value: 'JOKER',
+    position: 18,
     isTurnedOff: false,
   },
 ];
@@ -614,7 +622,7 @@ export function playHades(game: Game): Game {
     card: bestCard.value,
   });
   console.log(
-    `Hades - best card removed from ${targetPlayer.id}, ${bestCard}, ${game}, ${newGame}`
+    `Hades - best card removed from ${targetPlayer.id}, ${bestCard.type}`
   );
 
   // Successful action
@@ -641,12 +649,7 @@ export function playHypnos(game: Game): Game {
     targetPlayerId: targetPlayer.id,
     card: bestCard.value,
   });
-  console.log(
-    `Hypnos - ${bestCard.value} turned off from ${targetPlayer.id}`,
-    bestCard,
-    game,
-    newGame
-  );
+  console.log(`Hypnos - ${bestCard.value} turned off from ${targetPlayer.id}`);
 
   return newGame;
 }

@@ -1,4 +1,11 @@
-import React, { FunctionComponent, useEffect, useRef, useState } from 'react';
+import React, {
+  FunctionComponent,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from 'react';
 import Animated from 'react-native-reanimated';
 import {
   Card,
@@ -13,7 +20,7 @@ import {
   playArtemis,
   playCard,
 } from 'gameFunctions';
-import { ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 import { handleSkipTurn, sortedBotCards, sortedCards } from 'app/handlers';
 import GameCardsSelected from './GameCardsSelected';
 import CardCurrentPlayed from './CardCurrentPlayed';
@@ -22,6 +29,10 @@ import { useDispatch } from 'react-redux';
 import { actionPlayGame } from 'app/actions/gameActions';
 import { getBotCards } from 'bot/bot.service';
 import GameCardsOpponentPlayer from './GameCardsOpponentPlayer';
+import ButtonAction from '../ButtonAction';
+import CardPile from './CardPile';
+import GameInformations from '../GameInformations';
+import GameArtemisModal from './GameArtemisModal';
 
 interface IPresidentCurrentPlayerCards {
   game: Game;
@@ -51,8 +62,8 @@ const startCardsAnimations = async (
 const PresidentCurrentPlayerCards: FunctionComponent<
   IPresidentCurrentPlayerCards
 > = ({ game }) => {
-  const cards = sortedCards(game.players);
-  const opponentCards = sortedBotCards(game.players);
+  const cards = useMemo(() => sortedCards(game.players), [game]);
+  const opponentCards = useMemo(() => sortedBotCards(game.players), [game]);
 
   const dispatch = useDispatch();
 
@@ -60,19 +71,15 @@ const PresidentCurrentPlayerCards: FunctionComponent<
   const opponentPlayerCardsRefs = useRef<Animated.View[]>([]);
 
   const [selectedCards, setSelectedCards] = useState<Card[]>([]);
-  const [firstSelectedCard, setFirstSelectedCard] = useState<Card>();
-  const [hasPressedCard, setHasPressedCard] = useState<boolean>(false);
-  const [selectedCardOccurrences, setSelectedCardOccurrences] =
-    useState<number>();
 
   const hasSelectedCard = useRef<boolean>(false);
 
   // Play Bot when ready
   useEffect(() => {
-    setTimeout(() => playBotTurnIfNecessary(), 100);
+    setTimeout(() => playBotTurnIfNecessary(), 2000);
   }, [game.currentPlayer.id]);
 
-  const playBotTurnIfNecessary = async () => {
+  const playBotTurnIfNecessary = useCallback(async () => {
     if (game.currentPlayer.id === 'bot') {
       const botCards = await getBotCards(game, game.currentPlayer.id);
 
@@ -93,110 +100,149 @@ const PresidentCurrentPlayerCards: FunctionComponent<
       // The bot can play + Artemis case
       botCards.forEach(async (card) => {
         if (card.type === CardType.ARTEMIS) {
-          const weakestCard = getWeakestCard(game.currentPlayer); // Get the weakest card for each Artemis
+          setTimeout(() => {
+            const weakestCard = getWeakestCard(game.currentPlayer); // Get the weakest card for each Artemis
 
-          if (weakestCard) {
-            gameAfterArtemisPlay = playArtemis(game, game.currentPlayer, [
-              weakestCard,
-            ]);
-            if (gameAfterArtemisPlay) {
-              dispatch(actionPlayGame(gameAfterArtemisPlay));
+            if (weakestCard) {
+              gameAfterArtemisPlay = playArtemis(game, game.currentPlayer, [
+                weakestCard,
+              ]);
+              if (gameAfterArtemisPlay) {
+                dispatch(actionPlayGame(gameAfterArtemisPlay));
+              }
             }
-          }
+          }, 2000);
+        }
+        if (
+          card.type === CardType.JOKER ||
+          card.type === CardType.HADES ||
+          card.type === CardType.HYPNOS
+        ) {
+          setTimeout(() => playBotTurnIfNecessary(), 2000);
+          return;
         }
       });
 
       setTimeout(() => actionPlayGame(changePlayerHand(game)), 2000);
     }
-  };
+  }, [game, dispatch]);
 
-  const playSelectedCards = (playedCards: Card[]) => {
-    if (playedCards.length >= 1) {
-      const newGame = playCard(game, game.currentPlayer, playedCards);
+  const playSelectedCards = useCallback(
+    (playedCards: Card[]) => {
+      if (playedCards.length >= 1) {
+        const newGame = playCard(game, game.currentPlayer, playedCards);
 
-      if (newGame) {
-        dispatch(actionPlayGame(newGame));
-        const gameState = isGameOver(newGame);
-        if (gameState.isOver) {
-          // TODO: Display Error Modal
-          // setShowModal(true); // Add this line
+        if (newGame) {
+          dispatch(actionPlayGame(newGame));
+          const gameState = isGameOver(newGame);
+          if (gameState.isOver) {
+            // TODO: Display Error Modal
+            // setShowModal(true); // Add this line
+          }
         }
+        if (
+          newGame &&
+          isLastCardArtemis(newGame) &&
+          game.currentPlayer.id !== 'bot'
+        ) {
+          // setShouldDisplayArtemisSelection(true);
+        }
+        setSelectedCards([]);
       }
-      if (
-        newGame &&
-        isLastCardArtemis(newGame) &&
-        game.currentPlayer.id !== 'bot'
-      ) {
-        // setShouldDisplayArtemisSelection(true);
-      }
-      setSelectedCards([]);
-    }
-  };
+    },
+    [game, dispatch]
+  );
 
-  const onCardsSelected = async (cards: Card[]) => {
-    setHasPressedCard(true);
+  const onCardsSelected = useCallback(
+    async (cards: Card[]) => {
+      // if (cards?.length >= 1 && cards?.[0].type === CardType.ARTEMIS) {
+      //   setSelectedCards(cards);
+      //   setSelectedCardOccurrences(cards?.length);
+      //   return;
+      // }
 
-    if (cards?.length >= 1 && cards?.[0].type === CardType.ARTEMIS) {
-      setSelectedCards(cards);
-      setSelectedCardOccurrences(cards?.length);
-      return;
-    }
+      // Start card animation
+      startCardsAnimations(defaultPlayerCardsRefs, cards);
 
-    // Start card animation
-    startCardsAnimations(defaultPlayerCardsRefs, cards);
+      setTimeout(() => playSelectedCards(cards), 1400);
+    },
+    [playSelectedCards]
+  );
 
-    setTimeout(() => playSelectedCards(cards), 1400);
-  };
-
-  const onCancelCardSelection = () => {
-    setFirstSelectedCard(undefined);
+  const onCancelCardSelection = useCallback(() => {
     setSelectedCards([]);
-  };
+  }, []);
 
-  const onCardPress = (item: Card) => {
-    const firstCardAlreadyPlayed = game.cardsHistory?.[0];
-    const cardsOccurrence = getCardOccurrences(cards, item);
+  const onCardPress = useCallback(
+    (item: Card) => {
+      const firstCardAlreadyPlayed = game.cardsHistory?.[0];
+      const cardsOccurrence = getCardOccurrences(cards, item);
 
-    const unpressableCards =
-      !!selectedCards?.length &&
-      selectedCards?.find((card) => card.value !== item.value) &&
-      selectedCards.length < firstCardAlreadyPlayed?.cardsPlayed?.length;
+      const unpressableCards =
+        !!selectedCards?.length &&
+        selectedCards?.find((card) => card.value !== item.value) &&
+        selectedCards.length < firstCardAlreadyPlayed?.cardsPlayed?.length;
 
-    // select only allowed multiple cards
-    if (unpressableCards) {
-      return;
-    }
-
-    // cannot select multiple cards with different values
-    if (selectedCards?.length && item.value !== selectedCards?.[0]?.value) {
-      return;
-    }
-
-    // if Card has occurrence or must on played with occurrence add the card item on selector
-    if (
-      firstCardAlreadyPlayed?.cardsPlayed.length > 1 ||
-      cardsOccurrence.length > 1
-    ) {
-      if (selectedCards?.length === 0) {
-        setFirstSelectedCard(item);
+      // select only allowed multiple cards
+      if (unpressableCards) {
+        return;
       }
-      setSelectedCards((currentSelectedCards) => [
-        ...currentSelectedCards,
-        item,
-      ]);
-      return;
-    }
 
-    onCardsSelected([item]);
-  };
+      if (selectedCards.find((c) => c.id === item.id)) return;
 
-  const onPlaySelection = () => {
+      console.log('vvvv', item.position, selectedCards?.[0]?.position);
+      // cannot select multiple cards with different values
+      if (
+        selectedCards?.length &&
+        item.position !== selectedCards?.[0]?.position
+      ) {
+        return;
+      }
+
+      const noCardsPlayedWithMultipleOccurrence =
+        !firstCardAlreadyPlayed?.cardsPlayed.length &&
+        cardsOccurrence.length > 1;
+      const cardsPlayedWithMultipleOccurrence =
+        firstCardAlreadyPlayed?.cardsPlayed.length > 1 &&
+        firstCardAlreadyPlayed?.cardsPlayed.length >= cardsOccurrence.length;
+
+      const canPlaySelectedCards = !game.cardsHistory?.length
+        ? true
+        : selectedCards.length <= game.cardsHistory?.length;
+
+      // if Card has occurrence or must on played with occurrence add the card item on selector
+      if (
+        noCardsPlayedWithMultipleOccurrence ||
+        cardsPlayedWithMultipleOccurrence
+      ) {
+        if (!canPlaySelectedCards) return;
+
+        setSelectedCards((currentSelectedCards) => [
+          ...currentSelectedCards,
+          item,
+        ]);
+        return;
+      }
+
+      onCardsSelected([item]);
+    },
+    [game, cards, selectedCards, onCardsSelected]
+  );
+
+  const onPlaySelection = useCallback(() => {
     hasSelectedCard.current = true;
     onCardsSelected(selectedCards);
     // clean card selected
-    setFirstSelectedCard(undefined);
     setSelectedCards([]);
-  };
+  }, [selectedCards, onCardsSelected]);
+
+  const onSkipPress = useCallback(() => {
+    const newGame = handleSkipTurn(game);
+    dispatch(actionPlayGame(newGame));
+    setSelectedCards([]);
+  }, [game, dispatch]);
+
+  console.log('game');
 
   return (
     <>
@@ -204,9 +250,12 @@ const PresidentCurrentPlayerCards: FunctionComponent<
         cards={cards}
         defaultPlayerCardsRefs={defaultPlayerCardsRefs}
         onCardPress={onCardPress}
+        onSkipPress={onSkipPress}
         MAX_NB_CARDS_BY_LINE={MAX_NB_CARDS_BY_LINE}
         game={game}
       />
+      <GameInformations game={game} style={styles.gameInfoContainer} />
+      <CardPile game={game} />
       <GameCardsOpponentPlayer
         cards={opponentCards}
         opponentPlayerCardsRefs={opponentPlayerCardsRefs}
@@ -215,11 +264,30 @@ const PresidentCurrentPlayerCards: FunctionComponent<
         onCancelCardSelection={onCancelCardSelection}
         onPlaySelection={onPlaySelection}
         selectedCards={selectedCards}
+        canPlaySelectedCards={
+          !game.cardsHistory?.length ||
+          selectedCards.length === game.cardsHistory?.length
+        }
       />
-
       <CardCurrentPlayed game={game} />
+      <GameArtemisModal
+        game={game}
+        onArtemisCardsSelected={(gameAfterArtemisPlay: Game) =>
+          dispatch(actionPlayGame(gameAfterArtemisPlay))
+        }
+      />
     </>
   );
 };
 
-export default PresidentCurrentPlayerCards;
+const styles = StyleSheet.create({
+  gameInfoContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    position: 'absolute',
+    top: 0,
+  },
+});
+
+export default React.memo(PresidentCurrentPlayerCards);

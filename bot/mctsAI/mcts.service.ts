@@ -72,11 +72,10 @@ export type MCTSAIConfig = {
 export const mcts = (
   game: MCTSGame,
   {
-    explorationFactor = Math.SQRT2,
-    timeoutInMilisecond = 1000,
+    explorationFactor = 1.5, // Increased exploration factor for more aggressive exploration
+    timeoutInMilisecond = 40, // Reduced timeout for faster decision making
   }: MCTSAIConfig = {}
 ): { move: MCTSMove; tree: MCTSTree } => {
-  // init gameState tree with the current move.
   const tree = {
     children: [],
     gameState: game,
@@ -85,19 +84,14 @@ export const mcts = (
     remainingPossiblesMoves: computePossibleMoves(game),
   };
 
-  const level = game.chosenLevel ?? 0;
-
-  const timeToCompute = timeoutInMilisecond * (2 + 2); //TODO Add BotDifficulty number handling
   const startTime = new Date().getTime();
-  while (new Date().getTime() - startTime < timeToCompute) {
+  while (new Date().getTime() - startTime < timeoutInMilisecond) {
     const { leaf: childToExplore, history } = selectAndExpand(
       tree,
       explorationFactor
     );
-
     const winnerId = playout(childToExplore.gameState);
     const isWin = winnerId === childToExplore.gameState.currentPlayerId;
-
     backPropagate(isWin, history);
   }
 

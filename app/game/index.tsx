@@ -1,6 +1,6 @@
 // app/game/screens/StartScreen.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { BotDifficulty, Player, deck, initializeGame } from 'gameFunctions';
@@ -24,6 +24,7 @@ const StartScreen: React.FC<Props> = () => {
   const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>(
     BotDifficulty.HARD
   );
+  const hasNavigated = useRef(false); // Add useRef to track navigation
 
   // Function to handle starting the game
   const handleStartGame = () => {
@@ -31,6 +32,9 @@ const StartScreen: React.FC<Props> = () => {
       alert('Please enter your name.');
       return;
     }
+
+    if (hasNavigated.current) return; // Prevent multiple navigations
+    hasNavigated.current = true;
 
     // Create the player and bot objects
     const player: Player = {
@@ -48,10 +52,10 @@ const StartScreen: React.FC<Props> = () => {
     // Dispatch the startGame action with the initialized game
     dispatch(startGame(game));
 
-    // // Optionally, let the bot play its turn after the player starts the game
-    // // dispatch(playBotTurn());
+    // Optionally, let the bot play its turn after the player starts the game
+    // dispatch(playBotTurn());
 
-    router.push({ pathname: '/game/heliosDuel' });
+    // router.push({ pathname: '/game/heliosDuel' });
   };
 
   return (
@@ -66,7 +70,7 @@ const StartScreen: React.FC<Props> = () => {
         />
       </View>
       <View style={styles.inputContainer}>
-        <Text>Bot Difficulty:</Text>
+        <Text>Bot Diffighculty:</Text>
         <Text>{botDifficulty}</Text>
       </View>
       <Button title='Start Game' onPress={handleStartGame} />

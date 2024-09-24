@@ -181,24 +181,24 @@ const CardAnimatedOpponent: FunctionComponent<ICardAnimatedOpponentProps> =
               const translateY = 445;
 
               offsetX.value = withTiming(translateX, {
-                duration: 1000,
+                duration: 500,
                 easing: Easing.out(Easing.cubic),
               });
               offsetY.value = withTiming(translateY, {
-                duration: 1000,
+                duration: 500,
                 easing: Easing.out(Easing.cubic),
               });
               scaleX.value = withTiming(
                 CARD_PREVIEW_WIDTH / CARD_HIDDEN_WIDTH,
                 {
-                  duration: 1000,
+                  duration: 500,
                   easing: Easing.out(Easing.cubic),
                 }
               );
               scaleY.value = withTiming(
                 CARD_PREVIEW_HEIGHT / CARD_HIDDEN_HEIGHT,
                 {
-                  duration: 1000,
+                  duration: 500,
                   easing: Easing.out(Easing.cubic),
                 }
               );
@@ -248,11 +248,11 @@ const CardAnimatedOpponent: FunctionComponent<ICardAnimatedOpponentProps> =
               );
 
               offsetX.value = withTiming(translateX, {
-                duration: 3000,
+                duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
               offsetY.value = withTiming(translateY, {
-                duration: 3000,
+                duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
 
@@ -311,24 +311,24 @@ const CardAnimatedOpponent: FunctionComponent<ICardAnimatedOpponentProps> =
               );
 
               offsetX.value = withTiming(translateX, {
-                duration: 3000,
+                duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
               offsetY.value = withTiming(translateY, {
-                duration: 3000,
+                duration: 1000,
                 easing: Easing.out(Easing.cubic),
               });
               scaleX.value = withDelay(
                 1000,
                 withTiming(CARD_DRAW_WIDTH / CARD_HIDDEN_WIDTH, {
-                  duration: 1000,
+                  duration: 500,
                   easing: Easing.out(Easing.cubic),
                 })
               );
               scaleY.value = withDelay(
                 1000,
                 withTiming(CARD_DRAW_HEIGHT / CARD_HIDDEN_HEIGHT, {
-                  duration: 1000,
+                  duration: 500,
                   easing: Easing.out(Easing.cubic),
                 })
               );
