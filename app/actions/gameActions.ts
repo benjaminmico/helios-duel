@@ -13,6 +13,7 @@ import {
   playCards,
   skipTurn,
   playArtemis,
+  playJoker,
 } from 'gameFunctions';
 import { RootState } from '../reducers';
 import { ThunkDispatch } from '@reduxjs/toolkit';
@@ -22,13 +23,15 @@ export const START_GAME = 'START_GAME';
 export const PLAY_CARDS = 'PLAY_CARDS';
 export const SKIP_TURN = 'SKIP_TURN';
 export const PLAY_ARTEMIS = 'PLAY_ARTEMIS';
+export const PLAY_JOKER = 'PLAY_JOKER';
 
 // Define a union type for the actions
 export type GameAction =
   | StartGameAction
-  | SetPlayersAction
+  | PlayCardAction
   | SkipTurnAction
-  | PlayArtemisAction;
+  | PlayArtemisAction
+  | PlayJokerAction;
 
 // Define action interfaces
 interface StartGameAction {
@@ -50,6 +53,11 @@ interface PlayArtemisAction {
   payload: Game;
 }
 
+interface PlayJokerAction {
+  type: typeof PLAY_JOKER;
+  payload: Game;
+}
+
 // Define action creators
 export const startGame = (game: Game): StartGameAction => ({
   type: START_GAME,
@@ -60,7 +68,7 @@ export const actionPlayCards = (
   cards: Card[]
 ): ThunkAction<void, RootState, unknown, AnyAction> => {
   return (
-    dispatch: ThunkDispatch<RootState, unknown, AnyAction>,
+    dispatch: ThunkDispatch<RootState, unknown, PlayCardAction>,
     getState: () => RootState
   ) => {
     const currentGame = getState().game;
@@ -68,7 +76,7 @@ export const actionPlayCards = (
     if (game) {
       dispatch({
         type: PLAY_CARDS,
-        payload: game,
+        payload: { ...currentGame, ...game },
       });
     }
   };
@@ -81,7 +89,7 @@ export const actionSkipTurn = (): ThunkAction<
   AnyAction
 > => {
   return (
-    dispatch: ThunkDispatch<RootState, unknown, AnyAction>,
+    dispatch: ThunkDispatch<RootState, unknown, SkipTurnAction>,
     getState: () => RootState
   ) => {
     const currentGame = getState().game;
@@ -105,7 +113,7 @@ export const actionPlayArtemis = (
   cards: Card[]
 ): ThunkAction<void, RootState, unknown, AnyAction> => {
   return (
-    dispatch: ThunkDispatch<RootState, unknown, AnyAction>,
+    dispatch: ThunkDispatch<RootState, unknown, PlayArtemisAction>,
     getState: () => RootState
   ) => {
     const currentGame = getState().game;
@@ -117,7 +125,32 @@ export const actionPlayArtemis = (
         type: PLAY_ARTEMIS,
         payload: {
           ...currentGame,
-          game,
+          ...game,
+        },
+      });
+    }
+  };
+};
+
+export const actionPlayJoker = (
+  cards: Card[]
+): ThunkAction<void, RootState, unknown, AnyAction> => {
+  return (
+    dispatch: ThunkDispatch<RootState, unknown, PlayJokerAction>,
+    getState: () => RootState
+  ) => {
+    const currentGame = getState().game;
+    const game = playJoker(currentGame, cards);
+
+    console.log('playJoker', game?.cardsPlayed?.length);
+
+    if (game) {
+      // Object re-assigned to force rerendering
+      dispatch({
+        type: PLAY_JOKER,
+        payload: {
+          ...currentGame,
+          ...game,
         },
       });
     }

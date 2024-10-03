@@ -31,7 +31,7 @@ const CardAnimated: FunctionComponent<ICardProps> = ({
   cardLocked,
   style,
 }) => {
-  const { card, offsetX, offsetY, scaleX, scaleY } = cardAnimated;
+  const { card, offsetX, offsetY, scaleX, scaleY, playedAt } = cardAnimated;
 
   // Animated style
   const animatedStyle = useAnimatedStyle(() => ({
@@ -55,7 +55,7 @@ const CardAnimated: FunctionComponent<ICardProps> = ({
         card={card}
         onPress={onCardPress}
         status={cardStatus}
-        isLocked={cardLocked}
+        isLocked={!playedAt && cardLocked}
       />
     </Animated.View>
   );

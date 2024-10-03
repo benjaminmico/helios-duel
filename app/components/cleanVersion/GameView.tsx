@@ -28,12 +28,14 @@ const GameView: React.FC = () => {
   const selfPlayerCardsRef = useRef<any>(null);
   const opponentPlayerCardsRef = useRef<any>(null);
 
+  console.log('gaaame', game?.cardsPlayed?.length);
+
   //  const cardsPlayed = game.cardsPlayed.map((card) => card.cardsPlayed).flat();
 
   game.cardsPlayed?.length &&
     console.log(
       'cardsPlayed',
-      game.cardsPlayed.map((c) => `${c.playerId}---${c.cardsPlayed?.length}`)
+      game.cardsPlayed.map((c) => `${c.playerId}---${c.cardsPlayed?.[0].value}`)
     );
 
   if (!game) return <View />;

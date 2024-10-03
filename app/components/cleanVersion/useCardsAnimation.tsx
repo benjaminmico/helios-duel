@@ -25,6 +25,7 @@ type CardAnimatedProps = {
   scaleY: SharedValue<number>;
   playedAt?: string;
   playable?: boolean;
+  isOut?: boolean;
 };
 
 export type CardAnimatedType = { card: Card } & CardAnimatedProps;
@@ -70,18 +71,10 @@ const useCardsAnimation = () => {
   };
 
   const moveCardToCenter = useCallback(
-    (
-      card: CardAnimatedType,
-      isOpponent: boolean,
-      cardPlayedMultiplePosition?: number
-    ) => {
+    (card: CardAnimatedType, cardPlayedMultiplePosition?: number) => {
       const { offsetX, offsetY, scaleX, scaleY } = card;
 
       card.playedAt = new Date(Date.now()).toISOString();
-
-      if (isOpponent) {
-        // Handle opponent card logic
-      }
 
       let centerX = screenWidth / 2 - CARD_WIDTH / 2;
       const centerY = screenHeight / 2 - CARD_HEIGHT / 2;
@@ -113,18 +106,49 @@ const useCardsAnimation = () => {
     },
     [dispatch, game]
   );
+  const moveCardOut = useCallback(
+    (card: CardAnimatedType) => {
+      const { offsetX } = card;
+
+      const offScreenX = screenWidth + CARD_WIDTH; // Move out of the screen on the right
+
+      // Animate to center
+      offsetX.value = withSpring(offScreenX, {
+        stiffness: 50,
+        damping: 20,
+      });
+
+      card.isOut = true;
+    },
+    [dispatch, game]
+  );
 
   const moveCardsToCenter = useCallback(
-    (cards: CardAnimatedType[], isOpponent: boolean) => {
+    (cards: CardAnimatedType[]) => {
       if (cards?.length === 1) {
-        moveCardToCenter(cards[0], isOpponent);
-        // onCardsPlayed();
+        moveCardToCenter(cards[0]);
         return;
       }
 
       cards.forEach((card, index) => {
-        moveCardToCenter(card, isOpponent, index);
+        moveCardToCenter(card, index);
       });
+    },
+    [dispatch, game]
+  );
+
+  const moveCardsOut = useCallback(
+    (cards: CardAnimatedType[]) => {
+      setTimeout(() => {
+        if (cards?.length === 1) {
+          moveCardOut(cards[0]);
+          return;
+        }
+
+        cards.forEach((card, index) => {
+          moveCardOut(card);
+        });
+      }, 0); // 3 seconds delay
     },
     [dispatch, game]
   );
@@ -132,6 +156,7 @@ const useCardsAnimation = () => {
   return {
     initializeCardPositions,
     moveCardsToCenter,
+    moveCardsOut,
   };
 };
 

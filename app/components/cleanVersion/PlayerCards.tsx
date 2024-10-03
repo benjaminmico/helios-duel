@@ -9,7 +9,7 @@ import {
 import { useSharedValue } from 'react-native-reanimated';
 import { Card, CardHistory, Card as CardType, Game } from 'gameFunctions';
 import CardAnimated from './CardAnimated';
-import { View, ViewStyle } from 'react-native';
+import { TouchableOpacity, View, ViewStyle } from 'react-native';
 import { CardStatus } from './Card';
 import GameCardsSelected from './GameCardsSelected';
 import { getAnimatedCards, getCardZIndex, isCardLocked } from './utils';
@@ -31,7 +31,8 @@ const PlayerCards: FunctionComponent<IPlayerCards> = forwardRef(
   ) => {
     const [selectedCards, setSelectedCards] = useState<CardType[]>([]);
 
-    const { initializeCardPositions, moveCardsToCenter } = useCardsAnimation();
+    const { initializeCardPositions, moveCardsToCenter, moveCardsOut } =
+      useCardsAnimation();
 
     const cardsRef = useRef<CardAnimatedType[]>(
       cards.map((card: CardType) => ({
@@ -42,12 +43,22 @@ const PlayerCards: FunctionComponent<IPlayerCards> = forwardRef(
         scaleY: useSharedValue(1),
         playedAt: '',
         playable: true,
+        isOut: false,
       }))
     );
 
     useEffect(() => {
       initializeCardPositions(cardsRef, isOpponent);
     }, [cardsRef, cardsPlayed?.length, isOpponent, initializeCardPositions]);
+
+    useEffect(() => {
+      if (cardsPlayed?.length === 0) {
+        const cardsToMove = cardsRef.current.filter(
+          (c) => !!c.playedAt && !c.isOut
+        );
+        moveCardsOut(cardsToMove);
+      }
+    }, [cardsPlayed?.length]);
 
     const handleCardPress = useCallback(
       (animatedCard: CardAnimatedType) => {
@@ -79,7 +90,7 @@ const PlayerCards: FunctionComponent<IPlayerCards> = forwardRef(
           case latestCardsPlayedLength === 1:
           case sameValueCards.length <= 1:
             // Case: Latest cards length play is 1 or only one card with the same value
-            moveCardsToCenter([animatedCard], isOpponent);
+            moveCardsToCenter([animatedCard]);
             // lockUnplayableCards(cardsRef.current, [cardToPlay]);
             onCardsPlayed([cardToPlay]);
             break;
@@ -103,7 +114,7 @@ const PlayerCards: FunctionComponent<IPlayerCards> = forwardRef(
       const animatedCardsToPlay = getAnimatedCards(cardsRef, selectedCards);
 
       if (animatedCardsToPlay.length > 0) {
-        moveCardsToCenter(animatedCardsToPlay, isOpponent);
+        moveCardsToCenter(animatedCardsToPlay);
         // lockUnplayableCards(cardsRef.current, selectedCards);
         onCardsPlayed(selectedCards);
         setSelectedCards([]);
@@ -127,6 +138,7 @@ const PlayerCards: FunctionComponent<IPlayerCards> = forwardRef(
         ),
       };
     };
+    console.log('cardsHistory', cardsPlayed?.length);
 
     return (
       <>

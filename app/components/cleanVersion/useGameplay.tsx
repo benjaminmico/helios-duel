@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import {
   actionPlayArtemis,
   actionPlayCards,
+  actionPlayJoker,
   actionSkipTurn,
 } from 'app/actions/gameActions';
 import { Card as CardType } from 'gameFunctions';
@@ -16,6 +17,11 @@ export const useGameplay = () => {
 
   const playCards = (cards: CardType[]) => {
     dispatch(actionPlayCards(cards));
+    setTimeout(() => {
+      if (cards?.[0]?.value === 'JOKER') {
+        dispatch(actionPlayJoker(cards));
+      }
+    }, 3000);
   };
 
   const playBotCards = async () => {

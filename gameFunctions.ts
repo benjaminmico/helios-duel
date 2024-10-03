@@ -532,21 +532,6 @@ export function playCards(game: Game, cards: Card[]): Game | null {
   // Add a new entry for the current cards played
   newGame = addCardHistoryEntry(newGame, newGame.currentPlayer, cards);
 
-  for (const card of cards) {
-    if (card.type === CardType.JOKER) {
-      game.action = addAction({
-        id: ActionName.JOKER,
-        playerId: currentPlayer.id,
-      });
-      newGame = cleanCardTable(newGame); // If any card is a JOKER, clean the table immediately
-      return {
-        ...newGame,
-        currentPlayer: game.currentPlayer,
-      };
-      break;
-    }
-  }
-
   if (isPowerCard(cards[0])) {
     newGame.action = {
       id: cards[0].type as unknown as ActionName,
@@ -561,14 +546,29 @@ export function playCards(game: Game, cards: Card[]): Game | null {
     });
   }
 
-  // console.log(
-  //   `${currentPlayer.id} play ${JSON.stringify(
-  //     cards.map((card) => card.value)
-  //   )}`
-  // );
   newGame = handlePowerCards(newGame, cards);
 
   return newGame;
+}
+
+export function playJoker(game: Game, cards: Card[]): Game | null {
+  if (cards?.[0]?.value !== 'JOKER') return game;
+
+  const currentPlayer = game.players.find((player) =>
+    player.cards.some((card) => card.id === cards[0].id)
+  );
+
+  if (!currentPlayer) return game;
+
+  game.action = addAction({
+    id: ActionName.JOKER,
+    playerId: currentPlayer.id,
+  });
+  const newGame = cleanCardTable(game);
+  return {
+    ...newGame,
+    currentPlayer: game.currentPlayer,
+  };
 }
 
 export function playArtemis(game: Game, cardsToPass: Card[]): Game {
@@ -773,13 +773,17 @@ function handlePowerCards(game: Game, cards: Card[]): Game {
   let newGame = game;
   for (const card of cards) {
     switch (card.type) {
-      case CardType.JOKER: {
-        newGame = cleanCardTable(newGame);
-        return {
-          ...newGame,
-          currentPlayer: game.currentPlayer,
-        };
-      }
+      // case CardType.JOKER: {
+      //   setTimeout(() => {
+      //     console.log('clean table');
+      //     newGame = cleanCardTable(newGame);
+      //     return {
+      //       ...newGame,
+      //       currentPlayer: game.currentPlayer,
+      //     };
+      //   }, 3000);
+      //   break;
+      // }
 
       case CardType.ARTEMIS: {
         return newGame;
