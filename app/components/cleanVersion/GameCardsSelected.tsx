@@ -1,27 +1,32 @@
 import React, { FunctionComponent } from 'react';
 import { Dimensions, FlatList, StyleSheet, View } from 'react-native';
 import Card, { CARD_VALIDATION_WIDTH, CardStatus } from '../cleanVersion/Card';
-import { Card as CardType } from 'gameFunctions';
+import { CardHistory, Card as CardType } from 'gameFunctions';
 import { Image } from 'expo-image';
 import ButtonAction from '../ButtonAction';
+import { getFlattenCardPlayed } from './utils';
 
 const { width: WINDOW_WIDTH, height: WINDOW_HEIGHT } = Dimensions.get('window');
 
 interface ICardGameCardsSelected {
   selectedCards: CardType[];
-  canPlaySelectedCards: boolean;
+  cardsPlayed: CardHistory[];
   onCancelCardSelection: () => void;
   onPlaySelection: () => void;
 }
 
 const GameCardsSelected: FunctionComponent<ICardGameCardsSelected> = ({
   selectedCards,
-  canPlaySelectedCards,
+  cardsPlayed,
   onCancelCardSelection,
   onPlaySelection,
 }) => {
   if (!selectedCards?.length) return;
 
+  const hasCardsPlayed = cardsPlayed?.length > 0;
+  const canPlaySelectedCards = hasCardsPlayed
+    ? selectedCards.length === cardsPlayed[0].cardsPlayed.length
+    : true;
   return (
     <View
       style={{

@@ -4,16 +4,16 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
 import { CardHistory, Card as CardType } from 'gameFunctions';
 
-import { CardAnimatedProps } from './useCardAnimation';
 import Card, { CardStatus } from './Card';
-
-export type CardAnimatedType = CardType & CardAnimatedProps;
+import { CardAnimatedType } from './useCardsAnimation';
+import { ViewStyle } from 'react-native';
 
 interface ICardProps {
-  card: CardAnimatedType;
-  onCardSelected?: (card?: CardType) => void;
+  cardAnimated: CardAnimatedType;
+  onCardPress?: (card?: CardType) => void;
   cardStatus: CardStatus;
   cardHidden?: boolean;
+  style?: ViewStyle;
 }
 
 // Constants for card dimensions
@@ -22,13 +22,13 @@ export const CARD_HEIGHT = 90;
 export const CARDS_PER_ROW = 9;
 
 const CardAnimated: FunctionComponent<ICardProps> = ({
-  card,
-  onCardSelected = () => {},
+  cardAnimated,
+  onCardPress = () => {},
   cardStatus,
   cardHidden = false,
   style,
 }) => {
-  const { offsetX, offsetY, scaleX, scaleY, playedAt = '' } = card;
+  const { card, offsetX, offsetY, scaleX, scaleY, playable } = cardAnimated;
 
   // Animated style
   const animatedStyle = useAnimatedStyle(() => ({
@@ -41,20 +41,8 @@ const CardAnimated: FunctionComponent<ICardProps> = ({
       { scaleX: scaleX.value },
       { scaleY: scaleY.value },
     ],
+    // opacity: playable ? 1.0 : 0.1,
     ...style,
-    // zIndex: (() => {
-
-    //   if (isMostRecentPlayCard) {
-    //     return 999999999;
-    //   }
-    //   if (cardHidden) {
-    //     return cardCurrentIndex || 0;
-    //   }
-    //   if (cardCurrentIndex >= CARDS_PER_ROW) {
-    //     return cardCurrentIndex || 0;
-    //   }
-    //   return Number(`11${cardCurrentIndex || 0}`);
-    // })(),
   }));
 
   return (
@@ -63,9 +51,9 @@ const CardAnimated: FunctionComponent<ICardProps> = ({
         isHidden={cardHidden}
         enabled
         card={card}
-        onPress={onCardSelected}
+        onPress={onCardPress}
         status={cardStatus}
-        isLocked={false}
+        isLocked={!playable}
       />
     </Animated.View>
   );

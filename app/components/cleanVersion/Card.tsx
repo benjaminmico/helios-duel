@@ -43,20 +43,7 @@ const Card: FunctionComponent<ICardItemProps> = ({
   isLocked = false,
   status = CardStatus.PLAYABLE,
   style,
-  isOpponentCard = false,
 }) => {
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (status === CardStatus.PREVIEW) {
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 10,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [status, opacity]);
-
   const getImageSource = (card: CardType) => {
     const imageName = card.type.includes('NORMAL')
       ? `${card.type}_${card.value}`
@@ -64,7 +51,7 @@ const Card: FunctionComponent<ICardItemProps> = ({
     return cardImages[imageName];
   };
 
-  const getCardItemStyle = () => {
+  const getCardItemStyle = (): ImageStyle => {
     if (status === CardStatus.PLAYABLE) {
       return isLocked
         ? { ...styles.containerPlayable, ...styles.containerLocked }
@@ -95,33 +82,27 @@ const Card: FunctionComponent<ICardItemProps> = ({
     return {};
   };
 
-  const renderGrayscaleOverlay = () => {
-    return <View style={styles.grayscaleOverlay} />;
-  };
-
   const renderCard = () => {
     const imageSource = isHidden
       ? require('assets/cards/HIDDEN_CARD.png')
       : getImageSource(card);
+
     return (
       <TouchableOpacity
         disabled={!enabled || isLocked}
-        style={style}
+        style={{
+          ...style,
+          width: getCardItemStyle().width,
+          height: getCardItemStyle().height,
+          backgroundColor: 'black',
+          borderRadius: getCardItemStyle().borderRadius,
+        }}
         onPress={() => onPress(card)}
       >
-        <View style={[styles.cardContainer]}>
-          {status === CardStatus.PREVIEW ? (
-            <Animated.Image
-              style={[getCardItemStyle(), { opacity }]}
-              source={imageSource}
-            />
-          ) : (
-            <Image style={getCardItemStyle()} source={imageSource} />
-          )}
-
-          {isLocked && <View style={styles.cardOverlay} />}
-          {card.isTurnedOff && !isOpponentCard && renderGrayscaleOverlay()}
-        </View>
+        <Image
+          style={{ ...getCardItemStyle(), opacity: isLocked ? 0.4 : 1.0 }}
+          source={imageSource}
+        />
       </TouchableOpacity>
     );
   };
@@ -211,32 +192,18 @@ const styles = StyleSheet.create({
   },
   containerLocked: {
     borderWidth: 1,
-    borderColor: colors.borders.cards,
   },
   cardContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  cardOverlay: {
-    backgroundColor: '#44403C',
-    borderRadius: 8,
-    flex: 1,
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    opacity: 0.5,
-    width: '100%',
-    height: '100%',
+    position: 'relative',
   },
   grayscaleOverlay: {
-    backgroundColor: 'rgba(128, 128, 128, 0.5)',
-    borderRadius: 8,
-    flex: 1,
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: '100%',
-    height: '100%',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 1,
+    width: 100,
+    height: 100,
   },
 });
