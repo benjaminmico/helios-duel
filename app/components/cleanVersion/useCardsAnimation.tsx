@@ -129,30 +129,9 @@ const useCardsAnimation = () => {
     [dispatch, game]
   );
 
-  const lockUnplayableCards = (
-    cardsRef: CardAnimatedType[],
-    cardsPlayed: Card[]
-  ) => {
-    if (!cardsPlayed?.length) return;
-    const latestCardsPlayed = cardsPlayed;
-    let lastPosition = null;
-
-    cardsRef?.forEach((c: CardAnimatedType) => {
-      if (c.card.position >= latestCardsPlayed[0].position) {
-        lastPosition = c.card.position;
-      } else {
-        c.playable = false;
-      }
-    });
-
-    console.log('lastPosition', lastPosition);
-    return lastPosition;
-  };
-
   return {
     initializeCardPositions,
     moveCardsToCenter,
-    lockUnplayableCards,
   };
 };
 

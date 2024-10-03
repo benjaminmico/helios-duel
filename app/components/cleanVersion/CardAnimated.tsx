@@ -13,6 +13,8 @@ interface ICardProps {
   onCardPress?: (card?: CardType) => void;
   cardStatus: CardStatus;
   cardHidden?: boolean;
+  cardLocked?: boolean;
+  cardPlayable?: boolean;
   style?: ViewStyle;
 }
 
@@ -26,9 +28,10 @@ const CardAnimated: FunctionComponent<ICardProps> = ({
   onCardPress = () => {},
   cardStatus,
   cardHidden = false,
+  cardLocked,
   style,
 }) => {
-  const { card, offsetX, offsetY, scaleX, scaleY, playable } = cardAnimated;
+  const { card, offsetX, offsetY, scaleX, scaleY } = cardAnimated;
 
   // Animated style
   const animatedStyle = useAnimatedStyle(() => ({
@@ -41,7 +44,6 @@ const CardAnimated: FunctionComponent<ICardProps> = ({
       { scaleX: scaleX.value },
       { scaleY: scaleY.value },
     ],
-    // opacity: playable ? 1.0 : 0.1,
     ...style,
   }));
 
@@ -53,7 +55,7 @@ const CardAnimated: FunctionComponent<ICardProps> = ({
         card={card}
         onPress={onCardPress}
         status={cardStatus}
-        isLocked={!playable}
+        isLocked={cardLocked}
       />
     </Animated.View>
   );

@@ -55,3 +55,15 @@ export const getAnimatedCards = (cardsRef: any, cards: Card[]) => {
 export const getFlattenCardPlayed = (cardsPlayed: CardHistory[]): Card[] => {
   return cardsPlayed.map((card) => card.cardsPlayed).flat();
 };
+
+export const isCardLocked = (
+  card: Card,
+  cardsHistory: CardHistory[]
+): boolean => {
+  if (!cardsHistory || cardsHistory.length === 0) return false;
+
+  const firstPlayedCard = cardsHistory[0]?.cardsPlayed?.[0];
+  if (!firstPlayedCard) return false;
+
+  return card.position < firstPlayedCard.position;
+};

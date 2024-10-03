@@ -12,7 +12,7 @@ import CardAnimated from './CardAnimated';
 import { View, ViewStyle } from 'react-native';
 import { CardStatus } from './Card';
 import GameCardsSelected from './GameCardsSelected';
-import { getAnimatedCards, getCardZIndex } from './utils';
+import { getAnimatedCards, getCardZIndex, isCardLocked } from './utils';
 import useCardsAnimation, { CardAnimatedType } from './useCardsAnimation';
 
 interface IPlayerCards {
@@ -30,10 +30,8 @@ const PlayerCards: FunctionComponent<IPlayerCards> = forwardRef(
     _ref
   ) => {
     const [selectedCards, setSelectedCards] = useState<CardType[]>([]);
-    const [_currentPlayedCardPosition, setCurrentPlayedCardPosition] =
-      useState<number>();
-    const { lockUnplayableCards, initializeCardPositions, moveCardsToCenter } =
-      useCardsAnimation();
+
+    const { initializeCardPositions, moveCardsToCenter } = useCardsAnimation();
 
     const cardsRef = useRef<CardAnimatedType[]>(
       cards.map((card: CardType) => ({
@@ -46,12 +44,6 @@ const PlayerCards: FunctionComponent<IPlayerCards> = forwardRef(
         playable: true,
       }))
     );
-
-    useEffect(() => {
-      const latestCardsPlayed = cardsPlayed?.[0]?.cardsPlayed;
-      const position = lockUnplayableCards(cardsRef.current, latestCardsPlayed);
-      position && setCurrentPlayedCardPosition(position);
-    }, [cardsPlayed?.length, lockUnplayableCards]);
 
     useEffect(() => {
       initializeCardPositions(cardsRef, isOpponent);
@@ -148,6 +140,7 @@ const PlayerCards: FunctionComponent<IPlayerCards> = forwardRef(
           <CardAnimated
             key={cardAnimated.card.id}
             cardAnimated={cardAnimated}
+            cardLocked={isCardLocked(cardAnimated.card, cardsPlayed)}
             style={cardAnimatedStyle(cardAnimated)}
             onCardPress={() => handleCardPress(cardAnimated)}
             cardStatus={isOpponent ? CardStatus.HIDDEN : CardStatus.PLAYABLE}
