@@ -44,7 +44,6 @@ const GameInformations: FunctionComponent<IGameInformations> = ({
 }) => {
   const actionToDisplay = () => {
     const { action } = game;
-    console.log('aaaction', action);
     if (!action) return null;
 
     switch (action.id) {
@@ -65,7 +64,7 @@ const GameInformations: FunctionComponent<IGameInformations> = ({
       case ActionName.SKIP_WITH_DICE_ROLL:
         return `${action.playerId} skipped the turn and rolled the dice`;
       case ActionName.SKIP_TURN:
-        return `${action.playerId} skipped the turn, now ${action.nextPlayerId} can play`;
+        return `${action.playerId} skipped, now ${action.nextPlayerId} can play`;
       case ActionName.DICE_ROLL_PICK_CARD:
         return `${action.playerId} rolled ${action.diceRoll} and picked a card`;
       case ActionName.DICE_ROLL_UNCHANGED:
@@ -83,7 +82,6 @@ const GameInformations: FunctionComponent<IGameInformations> = ({
 
   const displayedAction = actionToDisplay();
 
-  console.log('sssss', displayedAction);
   return (
     <View style={style}>
       {displayedAction && (

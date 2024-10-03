@@ -101,7 +101,7 @@ export const mcts = (
 export const mapGamePresidentDocumentToMctsGame = (game: Game): MCTSGame => ({
   currentPlayerId: game.currentPlayer.id,
   currentPlayer: game.currentPlayer,
-  currentPlayHistory: game.cardsHistory.map(
+  currentPlayHistory: game.cardsPlayed.map(
     (historyEvent: { playerId: string; cardsPlayed: Card[] }) => ({
       cards: historyEvent.cardsPlayed,
       playerId: historyEvent.playerId,

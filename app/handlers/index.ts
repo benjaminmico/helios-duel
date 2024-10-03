@@ -18,7 +18,7 @@ export const handlePlayCard = (
   try {
     const lastTurnCardsCount = _.get(
       game,
-      'cardsHistory[0].cardsPlayed.length',
+      'cardsPlayed[0].cardsPlayed.length',
       0
     );
 
@@ -131,31 +131,36 @@ export const handleBotPlayArtemis = (
 
 export const getPlayer = (
   players: Player[],
-  playerId: string | 'user' | 'bot'
+  playerId: string | 'self' | 'opponent'
 ) => {
   switch (playerId) {
-    case 'user':
+    case 'self':
       return players.find((player) => player.id !== 'bot');
-    case 'bot':
+    case 'opponent':
       return players.find((player) => player.id === 'bot');
     default:
       return players.find((player) => player.id == playerId);
   }
 };
 
-export const currentPlayerCards = (players: Player[]) =>
-  players.find((player) => player.id !== 'bot')?.cards || [];
+export const selfPlayerCards = (players: Player[]) => {
+  const selfCards = players.find((player) => player.id !== 'bot')?.cards || [];
+  return selfCards.sort((a, b) => a.position - b.position);
+};
 
-export const currentBotCards = (players: Player[]) =>
-  _.get(_.find(players, { id: 'bot' }), 'cards', []);
+export const opponentPlayerCards = (players: Player[]) => {
+  const opponentCards =
+    players.find((player) => player.id === 'bot')?.cards || [];
+  return opponentCards.sort((a, b) => a.position - b.position);
+};
 
 export const sortedBotCards = (players: Player[]) =>
-  _.sortBy(currentBotCards(players), 'position');
+  _.sortBy(opponentPlayerCards(players), 'position');
 export const sortedCards = (players: Player[]) =>
-  _.sortBy(currentPlayerCards(players), 'position');
+  _.sortBy(selfPlayerCards(players), 'position');
 
-export const getGameCardsHistory = (cardsHistory: CardHistory[]) =>
-  _.map(cardsHistory, (card: CardHistory) => ({
+export const getGameCardsHistory = (cardsPlayed: CardHistory[]) =>
+  _.map(cardsPlayed, (card: CardHistory) => ({
     playerId: card.playerId,
     cardsPlayed: _.map(card.cardsPlayed, 'value'),
   }));

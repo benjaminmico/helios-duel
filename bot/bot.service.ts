@@ -6,10 +6,7 @@ import { mctsAI } from './mctsAI/mcts';
  *
  * By changing this function, you can change the behaviour of the bot.
  */
-export const getBotCards = async (
-  game: Game,
-  botPlayerId: string
-): Promise<Card[]> => {
+export const getBotCards = async (game: Game): Promise<Card[]> => {
   // This functions returns the card played from the bot.
   // You can change the default behaviour of the bot by changing this function
   // - `basicAI` for the most basic AI possible, playing first possible legal
@@ -19,9 +16,9 @@ export const getBotCards = async (
   //    changing the value in `timeoutInMilisecond`. A higher value means that
   //    the bot will be stronger. Values to low (some miliseconds) will end up
   //    random play.
-  const cards = mctsAI(game, botPlayerId, { timeoutInMilisecond: 1000 }).filter(
-    (card) => card !== undefined || card !== null
-  );
+  const cards = mctsAI(game, game.currentPlayer.id, {
+    timeoutInMilisecond: 1000,
+  }).filter((card) => card !== undefined || card !== null);
 
   return cards;
 

@@ -1,105 +1,102 @@
-// app/game/screens/StartScreen.tsx
+// App.js
 
-import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { BotDifficulty, Player, deck, initializeGame } from 'gameFunctions';
-import { startGame, playBotTurn } from '../actions/gameActions';
-import { RouteProp, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from 'types/NavigationTypes';
-import { router } from 'expo-router';
-import { RootState } from '../reducers';
+import React, { useRef } from 'react';
+import {
+  View,
+  Dimensions,
+  StyleSheet,
+  Pressable,
+  StatusBar,
+} from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 
-type StartScreenRouteProp = RouteProp<RootStackParamList, 'start'>;
-type StartScreenNavigationProp = NavigationProp<RootStackParamList, 'start'>;
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-type Props = {
-  route: StartScreenRouteProp;
-  navigation: StartScreenNavigationProp;
-};
+// Constants for card dimensions
+const CARD_WIDTH = 100;
+const CARD_HEIGHT = 150;
 
-const StartScreen: React.FC<Props> = () => {
-  const dispatch = useDispatch();
-  const [playerName, setPlayerName] = useState('');
-  const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>(
-    BotDifficulty.HARD
-  );
-  const hasNavigated = useRef(false); // Add useRef to track navigation
+// Card Component
+const Card = ({ initialX, initialY }) => {
+  const cardRef = useRef(null);
 
-  // Function to handle starting the game
-  const handleStartGame = () => {
-    if (!playerName) {
-      alert('Please enter your name.');
-      return;
-    }
+  // Shared values for position
+  const offsetX = useSharedValue(initialX);
+  const offsetY = useSharedValue(initialY);
 
-    if (hasNavigated.current) return; // Prevent multiple navigations
-    hasNavigated.current = true;
+  // Animated style
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: offsetX.value }, { translateY: offsetY.value }],
+  }));
 
-    // Create the player and bot objects
-    const player: Player = {
-      id: playerName,
-      cards: [], // Initialize with an empty hand
-    };
-    const bot: Player = {
-      id: 'bot',
-      cards: [], // Initialize with an empty hand
-    };
+  // Function to move card to center
+  const moveCardToCenter = () => {
+    cardRef.current.measure((x, y, width, height, pageX, pageY) => {
+      // Calculate screen center
+      const centerX = screenWidth / 2;
+      const centerY = screenHeight / 2;
 
-    // Initialize the game using the provided functions
-    const game = initializeGame([player, bot], deck);
+      // Calculate card's center position
+      const cardCenterX = pageX + width / 2;
+      const cardCenterY = pageY + height / 2;
 
-    // Dispatch the startGame action with the initialized game
-    dispatch(startGame(game));
+      // Calculate translation needed
+      const translateX = centerX - cardCenterX;
+      const translateY = centerY - cardCenterY;
 
-    // Optionally, let the bot play its turn after the player starts the game
-    // dispatch(playBotTurn());
-
-    // router.push({ pathname: '/game/heliosDuel' });
+      // Update shared values to animate
+      offsetX.value = withSpring(offsetX.value + translateX);
+      offsetY.value = withSpring(offsetY.value + translateY);
+    });
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Welcome to the Card Game!</Text>
-      <View style={styles.inputContainer}>
-        <Text>Your Name:</Text>
-        <TextInput
-          style={styles.input}
-          value={playerName}
-          onChangeText={(text) => setPlayerName(text)}
-        />
-      </View>
-      <View style={styles.inputContainer}>
-        <Text>Bot Diffighculty:</Text>
-        <Text>{botDifficulty}</Text>
-      </View>
-      <Button title='Start Game' onPress={handleStartGame} />
-    </View>
+    <Animated.View ref={cardRef} style={[styles.card, animatedStyle]}>
+      <Pressable style={styles.cardContent} onPress={moveCardToCenter}>
+        {/* Card content goes here */}
+      </Pressable>
+    </Animated.View>
   );
 };
 
+// Main App Component
+const App = () => {
+  // Function to generate random positions
+  const getRandomPosition = () => {
+    const x = Math.random() * (screenWidth - CARD_WIDTH);
+    const y =
+      Math.random() * (screenHeight - CARD_HEIGHT - StatusBar.currentHeight);
+    return { x, y };
+  };
+
+  // Create multiple cards
+  const cards = Array.from({ length: 10 }).map((_, index) => {
+    const position = getRandomPosition();
+    return <Card key={index} initialX={position.x} initialY={position.y} />;
+  });
+
+  return <View style={styles.container}>{cards}</View>;
+};
+
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
   },
-  heading: {
-    fontSize: 24,
-    marginBottom: 20,
+  card: {
+    position: 'absolute',
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  input: {
+  cardContent: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: 'gray',
-    padding: 5,
+    backgroundColor: 'skyblue',
+    borderRadius: 10,
   },
 });
 
-export default StartScreen;
+export default App;

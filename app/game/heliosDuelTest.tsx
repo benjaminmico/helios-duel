@@ -1,4 +1,4 @@
-import GameBackgroundView from 'app/components/GameBackgroundView';
+import GameBackgroundView from 'app/components/cleanVersion/GameBackgroundView';
 import React, { FunctionComponent } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSelector } from 'react-redux';

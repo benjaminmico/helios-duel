@@ -8,16 +8,17 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import Card, { CardStatus } from '../cleanVersion/Card';
+import Card, { CardStatus } from './Card';
 import { FONT_FAMILY_COPPERPLATE_BOLD } from 'constants/HeliosTheme';
 
-interface ICardPile {
+interface ICardsPile {
   game: Game;
+  style?: ViewStyle;
 }
 
-const CardPile: FunctionComponent<ICardPile> = ({ game }) => {
+const CardsPile: FunctionComponent<ICardsPile> = ({ game, style }) => {
   return (
-    <View style={styles.container}>
+    <View style={style}>
       {game?.deck?.map(
         (item: CardType, index: number) =>
           index < 10 && (
@@ -50,7 +51,7 @@ const CardPile: FunctionComponent<ICardPile> = ({ game }) => {
   );
 };
 
-export default CardPile;
+export default CardsPile;
 
 interface IStyles {
   container: ViewStyle;
@@ -59,13 +60,6 @@ interface IStyles {
 }
 
 const styles: IStyles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: '45%',
-    left: 10,
-    alignItems: 'center',
-    zIndex: 1,
-  },
   deckValue: {
     color: 'white',
     fontFamily: FONT_FAMILY_COPPERPLATE_BOLD,

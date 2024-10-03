@@ -48,13 +48,13 @@ const GameScreen: React.FC = () => {
   const [shouldDisplayArtemisSelection, setShouldDisplayArtemisSelection] =
     useState<boolean>(false);
 
-  const { currentPlayer, players, cardsHistory } = game;
+  const { currentPlayer, players, cardsPlayed } = game;
 
   const boundHandleSelectArtemisCard = useCallback(
     (card: Card) => {
       const lastCardPlayedCount = _.get(
         game,
-        'cardsHistory[0].cardsPlayed.length',
+        'cardsPlayed[0].cardsPlayed.length',
         0
       );
       const newSelectedArtemisCards = handlers.handleSelectArtemisCard(
@@ -191,10 +191,7 @@ const GameScreen: React.FC = () => {
   };
 
   const renderArtemisSelectCard = () => {
-    const sortedCards = _.sortBy(
-      handlers.currentPlayerCards(players),
-      'position'
-    );
+    const sortedCards = _.sortBy(handlers.selfPlayerCards(players), 'position');
 
     return (
       <View>
@@ -269,7 +266,7 @@ const GameScreen: React.FC = () => {
         <Text>Current Player: {currentPlayer.id}</Text>
         <Text>Cards Played: </Text>
         <FlatList
-          data={handlers.getGameCardsHistory(cardsHistory)}
+          data={handlers.getGameCardsHistory(cardsPlayed)}
           renderItem={renderGameCard}
           keyExtractor={(_item, index) => `gameCard_${index}`}
         />

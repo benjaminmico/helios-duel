@@ -55,7 +55,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name='game' options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>

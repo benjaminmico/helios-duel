@@ -25,7 +25,7 @@ import CardItem, {
   CARD_PLAYABLE_WIDTH,
   CARD_PREVIEW_HEIGHT,
   CARD_PREVIEW_WIDTH,
-} from './Card';
+} from './cleanVersion/Card';
 import { Card } from 'gameFunctions';
 import { AnimationsContext } from 'app/core/AnimationsProvider';
 

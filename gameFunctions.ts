@@ -26,8 +26,9 @@ export interface CardHistory {
 export interface Game {
   id: string;
   players: Player[];
+  createdAt: string;
   currentPlayer: Player;
-  cardsHistory: CardHistory[];
+  cardsPlayed: CardHistory[];
   deck: Card[];
   discardPile: Card[];
   chosenLevel: BotDifficulty;
@@ -56,6 +57,7 @@ export enum ActionName {
   ARTEMIS_GIVED = 'ARTEMIS_GIVED',
   HADES_DISCARDED = 'HADES_DISCARDED',
   HYPNOS_TURNED_OFF = 'HYPNOS_TURNED_OFF',
+  SKIP_TURN = 'SKIP_TURN',
   SKIP_WITH_DICE_ROLL = 'SKIP_WITH_DICE_ROLL',
   DICE_ROLL_PICK_CARD = 'DICE_ROLL_PICK_CARD',
   DICE_ROLL_UNCHANGED = 'DICE_ROLL_UNCHANGED',
@@ -99,7 +101,6 @@ export type CardGod =
   | CardType.HYPNOS;
 
 function addAction(action: Action): Action {
-  console.log('Action: ', action);
   return action;
 }
 
@@ -324,8 +325,9 @@ export function initializeGame(players: Player[], deck: Card[]): Game {
   const game: Game = {
     id: uuidv4(),
     players: players,
+    createdAt: new Date(Date.now()).toISOString(),
     currentPlayer: players[0],
-    cardsHistory: [],
+    cardsPlayed: [],
     deck,
     discardPile: [],
     chosenLevel: BotDifficulty.EASY,
@@ -369,17 +371,20 @@ export function drawCardFromDeck(game: Game): Card | null {
   return deck.shift()!;
 }
 
-export function skipTurn(game: Game, currentPlayer: Player): Game {
+export function skipTurn(game: Game): Game {
+  const currentPlayer = game.currentPlayer;
+
+  // Set next player
   game.currentPlayer = game.players.find(
-    (player) => player.id !== currentPlayer.id
+    (player) => player.id !== game.currentPlayer.id
   )!;
 
-  // // When skip, user has to roll the dice
-  // game.action = {
-  //   id: ActionName.SKIP_WITH_DICE_ROLL,
-  //   playerId: game.currentPlayer.id,
-  // };
-  console.log(`${currentPlayer.id} skip turn`);
+  game.action = addAction({
+    id: ActionName.SKIP_TURN,
+    playerId: currentPlayer.id,
+    nextPlayerId: game.currentPlayer.id,
+  });
+  console.log(`${currentPlayer} skip turn`);
   return game;
 }
 
@@ -420,7 +425,7 @@ export function rollDiceAndSkipTurn(game: Game): Game {
   game = skipTurn(game, currentPlayer);
 
   // Clean the cards history
-  game.cardsHistory = [];
+  game.cardsPlayed = [];
 
   return game;
 }
@@ -429,7 +434,7 @@ export const getCardOccurrences = (playerCards: Card[], card: Card) =>
   playerCards.filter((playerCard) => playerCard.position === card.position);
 
 export function canPlayCard(game: Game, player: Player, card: Card): boolean {
-  if (!game.cardsHistory.length) {
+  if (!game.cardsPlayed.length) {
     return true;
   }
 
@@ -438,7 +443,7 @@ export function canPlayCard(game: Game, player: Player, card: Card): boolean {
     (playerCard) => playerCard.position === card.position
   ).length;
 
-  const lastCardsPlayed = game.cardsHistory[0].cardsPlayed;
+  const lastCardsPlayed = game.cardsPlayed[0].cardsPlayed;
 
   if (!player.cards.includes(card)) {
     return false;
@@ -481,7 +486,7 @@ export function canPlayMultipleCards(
   }
 
   const lastCardPlayed =
-    game.cardsHistory.length > 0 ? game.cardsHistory[0].cardsPlayed[0] : null;
+    game.cardsPlayed.length > 0 ? game.cardsPlayed[0].cardsPlayed[0] : null;
 
   const numberOfCards = cards.length;
 
@@ -503,19 +508,26 @@ export function canPlayMultipleCards(
   );
 }
 
-export function playCard(
-  game: Game,
-  player: Player,
-  cards: Card[]
-): Game | null {
-  if (game.currentPlayer !== player) {
-    return null;
-  }
+export function playCards(game: Game, cards: Card[]): Game | null {
+  // Find the player who has the first card in the cards array
+  const currentPlayer = game.players.find((player) =>
+    player.cards.some((card) => card.id === cards[0].id)
+  );
 
   let newGame = game;
 
-  // Remove the played cards from the player's hand
-  newGame = removePlayerCards(newGame, newGame.currentPlayer, cards);
+  if (!currentPlayer) {
+    console.log('Player not found for the given cards');
+    return null;
+  }
+
+  if (game.currentPlayer !== currentPlayer) {
+    console.log("It's not the current player's turn");
+    return null;
+  }
+
+  // // Remove the played cards from the player's hand
+  // newGame = removePlayerCards(newGame, newGame.currentPlayer, cards);
 
   // Add a new entry for the current cards played
   newGame = addCardHistoryEntry(newGame, newGame.currentPlayer, cards);
@@ -524,7 +536,7 @@ export function playCard(
     if (card.type === CardType.JOKER) {
       game.action = addAction({
         id: ActionName.JOKER,
-        playerId: player.id,
+        playerId: currentPlayer.id,
       });
       newGame = cleanCardTable(newGame); // If any card is a JOKER, clean the table immediately
       return {
@@ -538,50 +550,55 @@ export function playCard(
   if (isPowerCard(cards[0])) {
     newGame.action = {
       id: cards[0].type as unknown as ActionName,
-      playerId: player.id,
+      playerId: currentPlayer.id,
       card: JSON.stringify(cards.map((card) => card.value)),
     };
   } else {
     newGame.action = addAction({
       id: ActionName.CARD_PLAYED,
-      playerId: player.id,
+      playerId: currentPlayer.id,
       card: JSON.stringify(cards.map((card) => card.value)),
     });
   }
 
-  console.log(
-    `${player.id} play ${JSON.stringify(cards.map((card) => card.value))}`
-  );
+  // console.log(
+  //   `${currentPlayer.id} play ${JSON.stringify(
+  //     cards.map((card) => card.value)
+  //   )}`
+  // );
   newGame = handlePowerCards(newGame, cards);
 
   return newGame;
 }
 
-export function playArtemis(
-  game: Game,
-  player: Player,
-  cardsToPass: Card[]
-): Game {
+export function playArtemis(game: Game, cardsToPass: Card[]): Game {
   let newGame = game;
 
+  // Find the player who has the first card in the cards array
+  const currentPlayer = game.players.find((player) =>
+    player.cards.some((card) => card.id === cardsToPass[0].id)
+  );
+
+  if (!currentPlayer) return game;
+
   // Find the target player based on the provided player.id
-  const targetPlayer = game.players.find((p) => p.id !== player.id);
+  const targetPlayer = game.players.find((p) => p.id !== currentPlayer.id);
 
   if (!targetPlayer) {
     // Handle the case where the target player is not found (e.g., return the original game)
     return newGame;
   }
 
-  console.log('player ids', player.id, targetPlayer.id);
+  console.log('player ids', currentPlayer.id, targetPlayer.id);
 
   // Remove the card from the player's hand
-  newGame = removePlayerCards(newGame, player, cardsToPass);
+  newGame = removePlayerCards(newGame, currentPlayer, cardsToPass);
   // Add the card to the target player's hand
   newGame = addCardsToPlayer(newGame, targetPlayer, cardsToPass);
 
   newGame.action = addAction({
     id: ActionName.ARTEMIS_GIVED,
-    playerId: player.id,
+    playerId: currentPlayer.id,
     targetPlayerId: targetPlayer.id,
     cards: cardsToPass.map((card) => card.value),
   });
@@ -676,12 +693,12 @@ export function isNormalCard(card: Card): boolean {
 export function cleanCardTable(game: Game): Game {
   // Move the played cards to the discard pile
   const lastCardsPlayed =
-    game.cardsHistory.length > 0 ? game.cardsHistory[0].cardsPlayed : [];
+    game.cardsPlayed.length > 0 ? game.cardsPlayed[0].cardsPlayed : [];
 
   game.discardPile = [...game.discardPile, ...lastCardsPlayed];
 
   // Clear the cards history
-  game.cardsHistory = [];
+  game.cardsPlayed = [];
 
   // Set the next player as the currentPlayer
   const currentPlayerIndex = game.players.findIndex(
@@ -747,7 +764,7 @@ function addCardHistoryEntry(game: Game, player: Player, cards: Card[]): Game {
     cardsPlayed: cards,
   };
 
-  newGame.cardsHistory.unshift(newEntry);
+  newGame.cardsPlayed.unshift(newEntry);
 
   return newGame;
 }
@@ -821,7 +838,7 @@ function turnOffCard(game: Game, player: Player, targetCard: Card): Game {
 }
 
 export function isLastCardArtemis(game: Game): boolean {
-  const lastCardHistory = game.cardsHistory[0];
+  const lastCardHistory = game.cardsPlayed[0];
 
   if (!lastCardHistory || lastCardHistory.cardsPlayed.length === 0) {
     return false; // No cards played in the last history or no history available
@@ -880,7 +897,7 @@ export function isGameOver(game: Game): {
       }
 
       // Check if the last card played by the winning player is a power card
-      const lastCardPlayed = game.cardsHistory[0]?.cardsPlayed[0];
+      const lastCardPlayed = game.cardsPlayed[0]?.cardsPlayed[0];
       if (lastCardPlayed && isPowerCard(lastCardPlayed)) {
         game.action = addAction({
           id: ActionName.GAME_FINISHED_GOD,

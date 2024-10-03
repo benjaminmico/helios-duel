@@ -27,10 +27,10 @@ import CardItem, {
   CARD_PREVIEW_HEIGHT,
   CARD_PREVIEW_WIDTH,
   CardStatus,
-} from './Card';
+} from './cleanVersion/Card';
 import { ActionName, Card as CardType } from 'gameFunctions';
 import { AnimationsContext } from 'app/core/AnimationsProvider';
-import Card from './Card';
+import Card from './cleanVersion/Card';
 
 interface ICardAnimatedOpponentProps {
   item: CardType;

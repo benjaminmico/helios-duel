@@ -1,14 +1,14 @@
 import React from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 import { Card as CardType, Game } from 'gameFunctions';
-import Card, { CardStatus } from '../Card';
+import Card, { CardStatus } from '../cleanVersion/Card';
 
 interface CardCurrentPlayedProps {
   game: Game;
 }
 
 const CardCurrentPlayed: React.FC<CardCurrentPlayedProps> = ({ game }) => {
-  const cardsPlayed = game.cardsHistory?.[0]?.cardsPlayed;
+  const cardsPlayed = game.cardsPlayed?.[0]?.cardsPlayed;
 
   if (!cardsPlayed) return;
 

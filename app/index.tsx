@@ -1,38 +1,58 @@
-// app/game/screens/StartScreen.tsx
+// App.js
 
-import React, { useState } from 'react';
+import 'react-native-gesture-handler'; // Must be at the top
+import React, { useState, useRef, useEffect, FunctionComponent } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  Button,
   StyleSheet,
+  Pressable,
+  Dimensions,
+  Touchable,
+  TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  runOnJS,
+  SharedValue,
+} from 'react-native-reanimated';
+
+import {
+  Card as CardType,
+  changePlayerHand,
+  deck,
+  initializeGame,
+  Player,
+} from 'gameFunctions';
+import CardItem, {
+  CARD_PLAYABLE_HEIGHT,
+  CARD_PLAYABLE_WIDTH,
+  CARD_PREVIEW_HEIGHT,
+  CARD_PREVIEW_WIDTH,
+} from './components/cleanVersion/Card';
+import CardAnimatedV2, {
+  CARD_HEIGHT,
+  CARD_WIDTH,
+} from './components/cleanVersion/CardAnimated';
 import { useDispatch, useSelector } from 'react-redux';
-import { BotDifficulty, Player, deck, initializeGame } from 'gameFunctions';
-import { RouteProp, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from 'types/NavigationTypes';
-import { router } from 'expo-router';
 import { RootState } from './reducers';
-import { startGame } from './actions/gameActions';
+import { actionPlayGame, startGame } from './actions/gameActions';
+import { selfPlayerCards, sortedBotCards, sortedCards } from './handlers';
+import { useCardAnimation } from './components/cleanVersion/useCardAnimation';
+import GameView from './components/cleanVersion/GameView';
 
-type StartScreenRouteProp = RouteProp<RootStackParamList, 'start'>;
-type StartScreenNavigationProp = NavigationProp<RootStackParamList, 'start'>;
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-type Props = {
-  route: StartScreenRouteProp;
-  navigation: StartScreenNavigationProp;
-};
+// Constants for card dimensions
 
-const StartScreen: React.FC<Props> = () => {
-  const dispatch = useDispatch();
-  const [playerName, setPlayerName] = useState('');
-  const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>(
-    BotDifficulty.HARD
-  );
-
+const App = () => {
   const game = useSelector((state: RootState) => state.game);
+
+  const dispatch = useDispatch();
+  const playerName = 'Ben';
 
   // Function to handle starting the game
   const handleStartGame = () => {
@@ -51,61 +71,28 @@ const StartScreen: React.FC<Props> = () => {
       cards: [], // Initialize with an empty hand
     };
 
-    // Initialize the game using the provided functions
     const game = initializeGame([player, bot], deck);
-
-    // Dispatch the startGame action with the initialized game
     dispatch(startGame(game));
-
-    // // Optionally, let the bot play its turn after the player starts the game
-    // // dispatch(playBotTurn());
-
-    router.push({ pathname: '/game/heliosDuelTest' });
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.heading}>Welcome to the Card Game!</Text>
-      <View style={styles.inputContainer}>
-        <Text>Your Name:</Text>
-        <TextInput
-          style={styles.input}
-          value={playerName}
-          onChangeText={(text) => setPlayerName(text)}
+  if (!game?.id)
+    return (
+      <SafeAreaView>
+        <TouchableOpacity
+          style={{ width: 40, height: 40, backgroundColor: 'red' }}
+          onPress={handleStartGame}
         />
-      </View>
-      <View style={styles.inputContainer}>
-        <Text>Bot Difficulty:</Text>
-        <Text>{botDifficulty}</Text>
-      </View>
-      <Button title='Start Game' onPress={handleStartGame} />
-    </SafeAreaView>
-  );
+      </SafeAreaView>
+    );
+
+  return <GameView game={game} />;
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
-  },
-  heading: {
-    fontSize: 24,
-    marginBottom: 20,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    padding: 16,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: 'gray',
-    padding: 5,
+    backgroundColor: '#0B6623',
   },
 });
 
-export default StartScreen;
+export default App;

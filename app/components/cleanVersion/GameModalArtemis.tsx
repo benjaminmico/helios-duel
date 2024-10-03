@@ -4,12 +4,12 @@ import ModalSelectCards from '../ModalSelectCards';
 import { Card, CardType, Game, playArtemis } from 'gameFunctions';
 import { getPlayer, sortedCards } from 'app/handlers';
 
-interface GameArtemisModalProps {
+interface GameModalArtemisProps {
   game: Game;
   onArtemisCardsSelected: (game: Game) => void;
 }
 
-const GameArtemisModal: React.FC<GameArtemisModalProps> = React.memo(
+const GameModalArtemis: React.FC<GameModalArtemisProps> = React.memo(
   ({ game, onArtemisCardsSelected }) => {
     const [isModalVisible, setIsModalVisible] = useState(true);
     const [key, setKey] = useState(0);
@@ -77,4 +77,4 @@ export const modalStyles = StyleSheet.create({
   },
 });
 
-export default GameArtemisModal;
+export default GameModalArtemis;

@@ -175,7 +175,7 @@ const PresidentCurrentPlayerCards: FunctionComponent<
 
   const onCardPress = useCallback(
     (item: Card) => {
-      const firstCardAlreadyPlayed = game.cardsHistory?.[0];
+      const firstCardAlreadyPlayed = game.cardsPlayed?.[0];
       const cardsOccurrence = getCardOccurrences(cards, item);
 
       const unpressableCards =
@@ -190,7 +190,6 @@ const PresidentCurrentPlayerCards: FunctionComponent<
 
       if (selectedCards.find((c) => c.id === item.id)) return;
 
-      console.log('vvvv', item.position, selectedCards?.[0]?.position);
       // cannot select multiple cards with different values
       if (
         selectedCards?.length &&
@@ -206,9 +205,9 @@ const PresidentCurrentPlayerCards: FunctionComponent<
         firstCardAlreadyPlayed?.cardsPlayed.length > 1 &&
         firstCardAlreadyPlayed?.cardsPlayed.length >= cardsOccurrence.length;
 
-      const canPlaySelectedCards = !game.cardsHistory?.length
+      const canPlaySelectedCards = !game.cardsPlayed?.length
         ? true
-        : selectedCards.length <= game.cardsHistory?.length;
+        : selectedCards.length <= game.cardsPlayed?.length;
 
       // if Card has occurrence or must on played with occurrence add the card item on selector
       if (
@@ -242,8 +241,6 @@ const PresidentCurrentPlayerCards: FunctionComponent<
     setSelectedCards([]);
   }, [game, dispatch]);
 
-  console.log('game');
-
   return (
     <>
       <GameCardsDefaultPlayer
@@ -265,8 +262,8 @@ const PresidentCurrentPlayerCards: FunctionComponent<
         onPlaySelection={onPlaySelection}
         selectedCards={selectedCards}
         canPlaySelectedCards={
-          !game.cardsHistory?.length ||
-          selectedCards.length === game.cardsHistory?.length
+          !game.cardsPlayed?.length ||
+          selectedCards.length === game.cardsPlayed[0].cardsPlayed.length
         }
       />
       <CardCurrentPlayed game={game} />
