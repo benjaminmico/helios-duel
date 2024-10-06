@@ -1,6 +1,7 @@
 import { Game } from 'gameFunctions';
 import {
   GameAction,
+  PLAY_ARTEMIS,
   PLAY_CARDS,
   PLAY_JOKER,
   SKIP_TURN,
@@ -23,6 +24,8 @@ const gameReducer = (state = initialState, action: GameAction): Game => {
     case PLAY_CARDS:
       return action.payload;
     case SKIP_TURN:
+      return action.payload;
+    case PLAY_ARTEMIS:
       return action.payload;
     case PLAY_JOKER:
       return action.payload;

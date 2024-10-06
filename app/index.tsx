@@ -64,11 +64,13 @@ const App = () => {
     // Create the player and bot objects
     const player: Player = {
       id: playerName,
-      cards: [], // Initialize with an empty hand
+      cards: [],
+      cardsArtemisReceived: [],
     };
     const bot: Player = {
       id: 'bot',
-      cards: [], // Initialize with an empty hand
+      cards: [],
+      cardsArtemisReceived: [],
     };
 
     const game = initializeGame([player, bot], deck);

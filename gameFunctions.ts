@@ -16,6 +16,7 @@ export interface Card {
 export interface Player {
   id: string;
   cards: Card[];
+  cardsArtemisReceived: Card[]; // handle separately to avoid rerendering
 }
 
 export interface CardHistory {
@@ -574,6 +575,7 @@ export function playJoker(game: Game, cards: Card[]): Game | null {
 export function playArtemis(game: Game, cardsToPass: Card[]): Game {
   let newGame = game;
 
+  console.log('play artemis');
   // Find the player who has the first card in the cards array
   const currentPlayer = game.players.find((player) =>
     player.cards.some((card) => card.id === cardsToPass[0].id)
@@ -591,9 +593,10 @@ export function playArtemis(game: Game, cardsToPass: Card[]): Game {
 
   console.log('player ids', currentPlayer.id, targetPlayer.id);
 
-  // Remove the card from the player's hand
-  newGame = removePlayerCards(newGame, currentPlayer, cardsToPass);
+  // // Remove the card from the player's hand
+  // newGame = removePlayerCards(newGame, currentPlayer, cardsToPass);
   // Add the card to the target player's hand
+
   newGame = addCardsToPlayer(newGame, targetPlayer, cardsToPass);
 
   newGame.action = addAction({
@@ -727,6 +730,11 @@ function removePlayerCards(game: Game, player: Player, cards: Card[]): Game {
   // Find the index of the player
   const playerIndex = findPlayerIndex(newGame, player);
 
+  console.log(
+    'BEFORE REMOVE',
+    JSON.stringify(newGame.players[playerIndex].cards.map((c) => c.value))
+  );
+
   // If the player is not found, exit the function
   if (playerIndex === -1) return newGame;
 
@@ -739,19 +747,26 @@ function removePlayerCards(game: Game, player: Player, cards: Card[]): Game {
     }
   }
 
+  console.log(
+    'AFTER REMOVE',
+    JSON.stringify(newGame.players[playerIndex].cards.map((c) => c.value))
+  );
   return newGame;
 }
 
-function addCardsToPlayer(game: Game, player: Player, cards: Card[]): Game {
+function addCardsToPlayer(
+  game: Game,
+  player: Player,
+  cards: Card[],
+  from?: 'deck' | 'artemis'
+): Game {
   const newGame = game;
   const playerIndex = findPlayerIndex(newGame, player);
 
   // If the player is not found, exit the function
   if (playerIndex === -1) return newGame;
 
-  // Add cards to the player's hand
-  console.log('add cards to player');
-  newGame.players[playerIndex].cards.push(...cards);
+  newGame.players[playerIndex].cardsArtemisReceived.push(...cards);
 
   return newGame;
 }
@@ -773,18 +788,6 @@ function handlePowerCards(game: Game, cards: Card[]): Game {
   let newGame = game;
   for (const card of cards) {
     switch (card.type) {
-      // case CardType.JOKER: {
-      //   setTimeout(() => {
-      //     console.log('clean table');
-      //     newGame = cleanCardTable(newGame);
-      //     return {
-      //       ...newGame,
-      //       currentPlayer: game.currentPlayer,
-      //     };
-      //   }, 3000);
-      //   break;
-      // }
-
       case CardType.ARTEMIS: {
         return newGame;
       }

@@ -1,13 +1,13 @@
 // App.js
 
 import 'react-native-gesture-handler'; // Must be at the top
-import React, { useRef } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { RefObject, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { Game } from 'gameFunctions';
+import { Card, Game } from 'gameFunctions';
 
 import { sortedBotCards, sortedCards } from 'app/handlers';
-import PlayerCards from './PlayerCards';
+import PlayerCards, { PlayerCardsHandle } from './PlayerCards';
 import { useGameplay } from './useGameplay';
 import GameBackgroundView from './GameBackgroundView';
 import GameInformations from './GameInformations';
@@ -16,27 +16,24 @@ import ButtonAction from './ButtonAction';
 import { RootState } from 'app/reducers';
 import { useSelector } from 'react-redux';
 import GameModalArtemis from './GameModalArtemis';
+import { getLatestCardPlayed } from './utils';
+import useCardsAnimation, { CardAnimatedType } from './useCardsAnimation';
 
 const GameView: React.FC = () => {
   const game = useSelector((state: RootState) => state.game);
-  const { playCards, skipTurn } = useGameplay();
+  const { playCards, playArtemis, skipTurn } = useGameplay();
+  const { onCardsPlayed } = useCardsAnimation();
 
   const selfPlayerCards = sortedCards(game.players);
   const opponentPlayerCards = sortedBotCards(game.players);
-  const cardsPlayed = game.cardsPlayed;
+  const opponentPlayerArtemisCards = sortedBotCards(
+    game.players,
+    'cardsArtemisReceived'
+  );
+  const cardsPlayed = game?.cardsPlayed || [];
 
-  const selfPlayerCardsRef = useRef<any>(null);
-  const opponentPlayerCardsRef = useRef<any>(null);
-
-  console.log('gaaame', game?.cardsPlayed?.length);
-
-  //  const cardsPlayed = game.cardsPlayed.map((card) => card.cardsPlayed).flat();
-
-  game.cardsPlayed?.length &&
-    console.log(
-      'cardsPlayed',
-      game.cardsPlayed.map((c) => `${c.playerId}---${c.cardsPlayed?.[0].value}`)
-    );
+  const selfPlayerCardsRef = useRef<PlayerCardsHandle>(null);
+  const opponentPlayerCardsRef = useRef<PlayerCardsHandle>(null);
 
   if (!game) return <View />;
 
@@ -48,8 +45,11 @@ const GameView: React.FC = () => {
         ref={opponentPlayerCardsRef}
         cards={opponentPlayerCards}
         cardsPlayed={cardsPlayed}
+        cardsArtemisReceived={opponentPlayerArtemisCards}
         gameCreatedAt={game.createdAt}
-        onCardsPlayed={playCards}
+        onCardsPlayed={(cards: Card[]) =>
+          onCardsPlayed(opponentPlayerCardsRef, selfPlayerCardsRef, cards)
+        }
         isOpponent
       />
       {game.currentPlayer.id !== 'bot' && (
@@ -63,13 +63,10 @@ const GameView: React.FC = () => {
         ref={selfPlayerCardsRef}
         cards={selfPlayerCards}
         cardsPlayed={cardsPlayed}
+        cardsArtemisReceived={[]}
         gameCreatedAt={game.createdAt}
-        onCardsPlayed={playCards}
-      />
-      <GameModalArtemis
-        game={game}
-        onArtemisCardsSelected={(gameAfterArtemisPlay: Game) =>
-          dispatch(actionPlayGame(gameAfterArtemisPlay))
+        onCardsPlayed={(cards: Card[]) =>
+          onCardsPlayed(selfPlayerCardsRef, opponentPlayerCardsRef, cards)
         }
       />
     </GameBackgroundView>

@@ -10,19 +10,25 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
 import { RootState } from 'app/reducers';
 import { getBotCards } from 'bot/bot.service';
+import { getLatestCardPlayed } from './utils';
 
 export const useGameplay = () => {
   const dispatch: ThunkDispatch<RootState, unknown, AnyAction> = useDispatch();
   const game = useSelector((state: RootState) => state.game);
 
-  const playCards = (cards: CardType[]) => {
+  const playCards = useCallback((cards: CardType[]) => {
     dispatch(actionPlayCards(cards));
-    setTimeout(() => {
-      if (cards?.[0]?.value === 'JOKER') {
-        dispatch(actionPlayJoker(cards));
-      }
-    }, 3000);
-  };
+
+    const cardValue = cards?.[0]?.value;
+    // const latestCardPlayedValue = getLatestCardPlayed(game.cardsPlayed)?.value;
+
+    switch (true) {
+      case cardValue === 'JOKER':
+        setTimeout(() => dispatch(actionPlayJoker(cards)), 2000);
+      // case latestCardPlayedValue === 'ARTEMIS':
+      //   dispatch(actionPlayArtemis(cards));
+    }
+  }, []);
 
   const playBotCards = async () => {
     const botCards = await getBotCards(game);
@@ -46,8 +52,8 @@ export const useGameplay = () => {
   return {
     game,
     playCards,
+    playArtemis,
     playBotCards,
     skipTurn,
-    playArtemis,
   };
 };

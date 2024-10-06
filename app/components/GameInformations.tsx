@@ -44,7 +44,6 @@ const GameInformations: FunctionComponent<IGameInformations> = ({
 }) => {
   const actionToDisplay = () => {
     const { action } = game;
-    console.log('aaaction', action);
     if (!action) return null;
 
     switch (action.id) {
@@ -83,7 +82,6 @@ const GameInformations: FunctionComponent<IGameInformations> = ({
 
   const displayedAction = actionToDisplay();
 
-  console.log('sssss', displayedAction);
   return (
     <View style={style}>
       {displayedAction && (

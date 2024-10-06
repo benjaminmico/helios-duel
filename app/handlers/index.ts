@@ -143,21 +143,31 @@ export const getPlayer = (
   }
 };
 
-export const selfPlayerCards = (players: Player[]) => {
-  const selfCards = players.find((player) => player.id !== 'bot')?.cards || [];
+export const selfPlayerCards = (
+  players: Player[],
+  type: 'cards' | 'cardsArtemisReceived' = 'cards'
+) => {
+  const selfCards = players.find((player) => player.id !== 'bot')?.[type] || [];
   return selfCards.sort((a, b) => a.position - b.position);
 };
 
-export const opponentPlayerCards = (players: Player[]) => {
+export const opponentPlayerCards = (
+  players: Player[],
+  type: 'cards' | 'cardsArtemisReceived' = 'cards'
+) => {
   const opponentCards =
-    players.find((player) => player.id === 'bot')?.cards || [];
+    players.find((player) => player.id === 'bot')?.[type] || [];
   return opponentCards.sort((a, b) => a.position - b.position);
 };
 
-export const sortedBotCards = (players: Player[]) =>
-  _.sortBy(opponentPlayerCards(players), 'position');
-export const sortedCards = (players: Player[]) =>
-  _.sortBy(selfPlayerCards(players), 'position');
+export const sortedBotCards = (
+  players: Player[],
+  type: 'cards' | 'cardsArtemisReceived' = 'cards'
+) => _.sortBy(opponentPlayerCards(players, type), 'position');
+export const sortedCards = (
+  players: Player[],
+  type: 'cards' | 'cardsArtemisReceived' = 'cards'
+) => _.sortBy(selfPlayerCards(players, type), 'position');
 
 export const getGameCardsHistory = (cardsPlayed: CardHistory[]) =>
   _.map(cardsPlayed, (card: CardHistory) => ({
