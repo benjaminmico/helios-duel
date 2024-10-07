@@ -85,6 +85,7 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
 
     const handleAddCard = useCallback(
       (cardAnimated: CardAnimatedType) => {
+        console.log('BBBB');
         // Add the new card to the reference array
         cardsRef.current.push(cardAnimated);
 
@@ -124,8 +125,8 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
     const handleDefaultCardPress = useCallback(
       (animatedCard: CardAnimatedType) => {
         const cardToPlay: Card = animatedCard.card;
-        const sameValueCards = cards.filter(
-          (c) => c.value === cardToPlay.value
+        const sameValueCards = cardsRef.current.filter(
+          (c) => c.card.value === cardToPlay.value && !c.playedAt
         );
 
         const isDifferentValueSelected = selectedCards.some(
@@ -174,19 +175,7 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
     const handleArtemisCardPress = useCallback(
       (animatedCard: CardAnimatedType) => {
         const cardToPlay: Card = animatedCard.card;
-        switch (true) {
-          // case latestCardsPlayedLength === 1:
-          // case sameValueCards.length <= 1:
-          //   // Case: Latest cards length play is 1 or only one card with the same value
-          //   moveCardsToCenter([animatedCard]);
-          //   // lockUnplayableCards(cardsRef.current, [cardToPlay]);
-          //   onCardsPlayed([cardToPlay]);
-          //   break;
-          default:
-            // Case: Multiple cards with the same value, add to selection
-            setSelectedCards((prev) => [...prev, cardToPlay]);
-            break;
-        }
+        setSelectedCards((prev) => [...prev, cardToPlay]);
       },
       [
         cards,
@@ -228,6 +217,7 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
       const latestCardPlayed = getLatestCardPlayed(cardsPlayed);
 
       if (latestCardPlayed?.value === 'ARTEMIS') {
+        console.log('selectedCards', selectedCards);
         onCardsPlayed(selectedCards);
         setSelectedCards([]);
         return;

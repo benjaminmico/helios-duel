@@ -231,7 +231,7 @@ const useCardsAnimation = () => {
       const cardRef =
         currentIndex && cardsRef.current?.getCardsRef()[currentIndex];
 
-      if (!cardRef) return;
+      if (cardRef === undefined) return;
 
       cardRef.playedAt = '';
 
