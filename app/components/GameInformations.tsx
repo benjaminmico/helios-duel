@@ -56,7 +56,7 @@ const GameInformations: FunctionComponent<IGameInformations> = ({
           action.targetPlayerId
         } through Artemis`;
       case ActionName.HADES_DISCARDED:
-        return `${action.playerId} discarded the best card of ${action.targetPlayerId}`;
+        return `${action.playerId} discarded ${action.card} the best card of ${action.targetPlayerId}`;
       case ActionName.HYPNOS_TURNED_OFF:
         return `${action.playerId} turned off ${action.card} of ${action.targetPlayerId}`;
       case ActionName.JOKER:

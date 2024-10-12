@@ -1,4 +1,4 @@
-import { Card, CardHistory } from 'gameFunctions';
+import { canPlayCard, Card, CardHistory } from 'gameFunctions';
 import { CARDS_PER_ROW } from './CardAnimated';
 import { CardAnimatedType } from './useCardsAnimation';
 
@@ -70,13 +70,19 @@ export const getLatestCardPlayed = (
 
 export const isCardLocked = (
   card: Card,
-  cardsHistory: CardHistory[]
+  playerCardsHand: React.MutableRefObject<CardAnimatedType[]>,
+  cardsHistory: CardHistory[],
+  isPlayable?: boolean,
+  isOnArtemisSelection?: boolean
 ): boolean => {
-  if (!cardsHistory || cardsHistory.length === 0) return false;
-  if (getLatestCardPlayed(cardsHistory)?.value === 'ARTEMIS') return false;
+  if (!isPlayable) return false;
 
-  const firstPlayedCard = cardsHistory[0]?.cardsPlayed?.[0];
-  if (!firstPlayedCard) return false;
+  // Filter out cards that have not been played yet
+  const notPlayedCards = playerCardsHand?.current
+    ?.filter((c) => !c.playedAt)
+    ?.map((c) => c.card);
 
-  return card.position < firstPlayedCard.position;
+  if (!notPlayedCards?.length || isOnArtemisSelection) return false;
+
+  return !canPlayCard(card, notPlayedCards, cardsHistory);
 };

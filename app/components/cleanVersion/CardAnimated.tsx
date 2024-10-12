@@ -15,6 +15,7 @@ interface ICardProps {
   cardHidden?: boolean;
   cardLocked?: boolean;
   cardPlayable?: boolean;
+  pointerEvents?: 'box-none' | 'none' | 'box-only' | 'auto' | undefined;
   style?: ViewStyle;
 }
 
@@ -29,9 +30,11 @@ const CardAnimated: FunctionComponent<ICardProps> = ({
   cardStatus,
   cardHidden = false,
   cardLocked,
+  pointerEvents,
   style,
 }) => {
-  const { card, offsetX, offsetY, scaleX, scaleY, playedAt } = cardAnimated;
+  const { card, offsetX, offsetY, scaleX, scaleY, playedAt, isTurnedOff } =
+    cardAnimated;
 
   // Animated style
   const animatedStyle = useAnimatedStyle(() => ({
@@ -48,7 +51,7 @@ const CardAnimated: FunctionComponent<ICardProps> = ({
   }));
 
   return (
-    <Animated.View style={animatedStyle}>
+    <Animated.View style={animatedStyle} pointerEvents={pointerEvents}>
       <Card
         isHidden={cardHidden}
         enabled
@@ -56,6 +59,7 @@ const CardAnimated: FunctionComponent<ICardProps> = ({
         onPress={onCardPress}
         status={cardStatus}
         isLocked={!playedAt && cardLocked}
+        isTurnedOff={card.isTurnedOff}
       />
     </Animated.View>
   );

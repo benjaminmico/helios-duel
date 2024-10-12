@@ -17,8 +17,15 @@ interface IGameInformations {
 
 function analyzeCardArray(cards: string | string[]): string {
   try {
-    const parsedCards = !!cards && JSON.parse(cards as string);
-    if (!!cards && Array.isArray(parsedCards)) {
+    let parsedCards;
+
+    if (Array.isArray(cards)) {
+      parsedCards = cards;
+    } else {
+      parsedCards = !!cards && JSON.parse(cards as string);
+    }
+
+    if (Array.isArray(parsedCards)) {
       const cardValue = parsedCards[0];
       const count = parsedCards.length;
       switch (count) {
@@ -33,9 +40,9 @@ function analyzeCardArray(cards: string | string[]): string {
       }
     }
   } catch (error) {
-    console.error('Error parsing cards:', error);
+    // console.error('Error parsing cards:', error);
   }
-  return cards;
+  return '';
 }
 
 const GameInformations: FunctionComponent<IGameInformations> = ({

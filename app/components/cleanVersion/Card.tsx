@@ -13,6 +13,12 @@ import { cardImages } from 'assets/cards';
 import { colors } from 'constants/HeliosTheme';
 import { useSelector } from 'react-redux';
 import { RootState } from 'app/reducers';
+import {
+  ColorMatrix,
+  concatColorMatrices,
+  Grayscale,
+  grayscale,
+} from 'react-native-color-matrix-image-filters';
 
 export enum CardStatus {
   PLAYABLE = 'PLAYABLE',
@@ -33,6 +39,7 @@ interface ICardItemProps {
   status?: CardStatus;
   style?: ViewStyle;
   isOpponentCard?: boolean;
+  isTurnedOff?: boolean;
 }
 
 const Card: FunctionComponent<ICardItemProps> = ({
@@ -43,6 +50,7 @@ const Card: FunctionComponent<ICardItemProps> = ({
   isLocked = false,
   status = CardStatus.PLAYABLE,
   style,
+  isTurnedOff = false,
 }) => {
   const getImageSource = (card: CardType) => {
     const imageName = card.type.includes('NORMAL')
@@ -87,22 +95,41 @@ const Card: FunctionComponent<ICardItemProps> = ({
       ? require('assets/cards/HIDDEN_CARD.png')
       : getImageSource(card);
 
+    const cardStyle = getCardItemStyle();
+    const borderColor = isTurnedOff ? 'grey' : cardStyle.borderColor;
+
     return (
       <TouchableOpacity
         disabled={!enabled || isLocked}
         style={{
           ...style,
-          width: getCardItemStyle().width,
-          height: getCardItemStyle().height,
+          width: cardStyle.width,
+          height: cardStyle.height,
           backgroundColor: 'black',
-          borderRadius: getCardItemStyle().borderRadius,
+          borderRadius: cardStyle.borderRadius,
         }}
         onPress={() => onPress(card)}
       >
-        <Image
-          style={{ ...getCardItemStyle(), opacity: isLocked ? 0.4 : 1.0 }}
-          source={imageSource}
-        />
+        {isTurnedOff ? (
+          <Grayscale>
+            <Image
+              style={{
+                ...getCardItemStyle(),
+                borderColor: 'grey',
+                opacity: isLocked ? 0.4 : 1.0,
+              }}
+              source={imageSource}
+            />
+          </Grayscale>
+        ) : (
+          <Image
+            style={{
+              ...getCardItemStyle(),
+              opacity: isLocked ? 0.4 : 1.0,
+            }}
+            source={imageSource}
+          />
+        )}
       </TouchableOpacity>
     );
   };

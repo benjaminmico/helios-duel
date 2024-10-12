@@ -24,15 +24,17 @@ import useCardsAnimation, { CardAnimatedType } from './useCardsAnimation';
 interface IPlayerCards {
   cards: CardType[];
   cardsPlayed: CardHistory[];
-  cardsArtemisReceived: Card[];
+  cardsReceived: Card[];
   gameCreatedAt: string;
   onCardsPlayed: (cards: CardType[]) => void;
   isOpponent?: boolean;
+  isOnArtemisSelection?: boolean;
+  isPlayable?: boolean;
 }
 
 export interface PlayerCardsHandle {
   getCardsRef: () => CardAnimatedType[];
-  handleRemoveCard: (cards: Card[]) => void;
+  handleRemoveCards: (cards: Card[]) => void;
   handleAddCard: (cardAnimated: CardAnimatedType) => void;
 }
 
@@ -41,21 +43,18 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
     {
       gameCreatedAt,
       cards,
-      cardsArtemisReceived,
       cardsPlayed,
+      isOnArtemisSelection = false,
       isOpponent = false,
+      isPlayable = false,
       onCardsPlayed,
     },
     ref
   ) => {
     const [selectedCards, setSelectedCards] = useState<CardType[]>([]);
 
-    const {
-      reorganizeAndSortCards,
-      initializeCardPositions,
-      moveCardsToCenter,
-      moveCardsOut,
-    } = useCardsAnimation();
+    const { initializeCardPositions, moveCardsToCenter, moveCardsOut } =
+      useCardsAnimation();
 
     const [_, setRender] = useState(false); // State to force re-render
 
@@ -69,23 +68,23 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
         playedAt: '',
         playable: true,
         isOut: false,
+        isTurnedOff: false,
       }))
     );
 
-    // if (!cardsRef?.current?.length) return <View />;
+    // Initialize card positions immediately after setting up cardsRef
+    initializeCardPositions(cardsRef, isOpponent);
 
-    const handleRemoveCard = useCallback((cards: Card[]) => {
-      const currentIndex = cardsRef?.current.findIndex(
-        (c) => c.card.id === cards[0].id
+    const handleRemoveCards = useCallback((cards: Card[]) => {
+      const cardIdsToRemove = new Set(cards.map((card) => card.id));
+      cardsRef.current = cardsRef.current.filter(
+        (cardAnimated) => !cardIdsToRemove.has(cardAnimated.card.id)
       );
-
-      delete cardsRef.current[currentIndex];
       setRender((prev) => !prev);
     }, []);
 
     const handleAddCard = useCallback(
       (cardAnimated: CardAnimatedType) => {
-        console.log('BBBB');
         // Add the new card to the reference array
         cardsRef.current.push(cardAnimated);
 
@@ -103,7 +102,7 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
       ref,
       (): PlayerCardsHandle => ({
         getCardsRef: () => cardsRef.current,
-        handleRemoveCard: (cards: Card[]) => handleRemoveCard(cards),
+        handleRemoveCards: (cards: Card[]) => handleRemoveCards(cards),
         handleAddCard: (cardAnimated: CardAnimatedType) =>
           handleAddCard(cardAnimated),
       })
@@ -189,11 +188,13 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
 
     const handleCardPress = useCallback(
       (animatedCard: CardAnimatedType) => {
+        setRender((prev) => !prev);
         if (!cardsPlayed?.length) {
           handleDefaultCardPress(animatedCard);
           return;
         }
         const latestCardPlayed = getLatestCardPlayed(cardsPlayed);
+        if (!latestCardPlayed) return handleDefaultCardPress(animatedCard);
 
         switch (latestCardPlayed.value) {
           case 'ARTEMIS':
@@ -227,7 +228,6 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
 
       if (animatedCardsToPlay.length > 0) {
         moveCardsToCenter(animatedCardsToPlay);
-        // lockUnplayableCards(cardsRef.current, selectedCards);
         onCardsPlayed(selectedCards);
         setSelectedCards([]);
       }
@@ -262,9 +262,16 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
         {!!cardsRef?.current?.length &&
           cardsRef.current.map((cardAnimated) => (
             <CardAnimated
+              pointerEvents={isPlayable ? 'auto' : 'none'}
               key={cardAnimated.card.id}
               cardAnimated={cardAnimated}
-              // cardLocked={isCardLocked(cardAnimated.card, cardsPlayed)}
+              cardLocked={isCardLocked(
+                cardAnimated.card,
+                cardsRef,
+                cardsPlayed,
+                isPlayable,
+                isOnArtemisSelection
+              )}
               style={cardAnimatedStyle(cardAnimated)}
               onCardPress={() => handleCardPress(cardAnimated)}
               cardStatus={isOpponent ? CardStatus.HIDDEN : CardStatus.PLAYABLE}

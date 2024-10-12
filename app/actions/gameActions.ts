@@ -14,6 +14,8 @@ import {
   skipTurn,
   playArtemis,
   playJoker,
+  playHades,
+  playHypnos,
 } from 'gameFunctions';
 import { RootState } from '../reducers';
 import { ThunkDispatch } from '@reduxjs/toolkit';
@@ -23,6 +25,8 @@ export const START_GAME = 'START_GAME';
 export const PLAY_CARDS = 'PLAY_CARDS';
 export const SKIP_TURN = 'SKIP_TURN';
 export const PLAY_ARTEMIS = 'PLAY_ARTEMIS';
+export const PLAY_HADES = 'PLAY_HADES';
+export const PLAY_HYPNOS = 'PLAY_HYPNOS';
 export const PLAY_JOKER = 'PLAY_JOKER';
 
 // Define a union type for the actions
@@ -141,8 +145,6 @@ export const actionPlayJoker = (
   ) => {
     const currentGame = getState().game;
     const game = playJoker(currentGame, cards);
-
-    console.log('playJoker', game?.cardsPlayed?.length);
 
     if (game) {
       // Object re-assigned to force rerendering

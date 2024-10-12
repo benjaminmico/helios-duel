@@ -18,7 +18,7 @@ import {
 import { Dimensions } from 'react-native';
 import { CARD_HEIGHT, CARD_WIDTH } from './CardAnimated';
 import { calculatePlayedCardZIndex, getLatestCardPlayed } from './utils';
-import { Card, CardHistory } from 'gameFunctions';
+import { Card, CardHistory, CardType } from 'gameFunctions';
 import { PlayerCardsHandle } from './PlayerCards';
 import { useGameplay } from './useGameplay';
 
@@ -32,13 +32,14 @@ type CardAnimatedProps = {
   playedAt?: string;
   playable?: boolean;
   isOut?: boolean;
+  isTurnedOff?: boolean;
 };
 
 export type CardAnimatedType = { card: Card } & CardAnimatedProps;
 
 const useCardsAnimation = () => {
   const game = useSelector((state: RootState) => state.game);
-  const { playCards, playArtemis, skipTurn } = useGameplay();
+  const { playCards, playArtemis } = useGameplay();
 
   const dispatch = useDispatch();
 
@@ -211,42 +212,121 @@ const useCardsAnimation = () => {
     [dispatch, game]
   );
 
-  const onCardsPlayed = (
+  const moveArtemisCards = (
     cardsRef: RefObject<PlayerCardsHandle>,
     targetCardsRef: RefObject<PlayerCardsHandle>,
     cards: Card[]
   ) => {
-    if (!game?.cardsPlayed?.length) {
-      playCards(cards);
-      return;
-    }
-
-    const latestCardPlayedValue = getLatestCardPlayed(game.cardsPlayed)?.value;
-    if (latestCardPlayedValue === 'ARTEMIS') {
-      const currentIndex = cardsRef?.current
+    cards.forEach((card) => {
+      const cardRef = cardsRef?.current
         ?.getCardsRef()
-        .findIndex((c) => c.card.id === cards[0].id);
-
-      // Get Card Ref to add
-      const cardRef =
-        currentIndex && cardsRef.current?.getCardsRef()[currentIndex];
+        .find((c) => c && c?.card?.id === card?.id);
 
       if (cardRef === undefined) return;
 
       cardRef.playedAt = '';
 
-      // Add Card to the target player
-      currentIndex &&
-        cardRef &&
+      if (cardRef?.card?.value) {
         targetCardsRef?.current?.handleAddCard(cardRef);
+      }
+    });
 
-      playArtemis(cards);
+    cardsRef?.current?.handleRemoveCards(cards);
+  };
+
+  const moveHadesCards = (
+    cardsRef: RefObject<PlayerCardsHandle>,
+    targetCardsRef: RefObject<PlayerCardsHandle>,
+    cards: Card[]
+  ) => {
+    const length = targetCardsRef?.current?.getCardsRef()?.length;
+    if (!length) return;
+
+    const numCardsToMove = cards.length;
+
+    const highestCardsHadesRefs = targetCardsRef.current
+      ?.getCardsRef()
+      .filter((cardRef) => !cardRef.playedAt) // Exclude played cards
+      .slice(-numCardsToMove);
+
+    if (!highestCardsHadesRefs || highestCardsHadesRefs.length < numCardsToMove)
+      return;
+
+    // Add Cards to the current player
+    highestCardsHadesRefs.forEach((cardRef) => {
+      cardsRef?.current?.handleAddCard(cardRef);
+    });
+
+    // Remove Cards from the target player
+    targetCardsRef?.current?.handleRemoveCards(
+      highestCardsHadesRefs.map((cardRef) => cardRef.card)
+    );
+  };
+
+  const moveHypnosCards = (
+    targetCardsRef: RefObject<PlayerCardsHandle>,
+    cards: Card[]
+  ) => {
+    const length = targetCardsRef?.current?.getCardsRef()?.length;
+
+    if (!length) return;
+
+    const numCardsToMove = cards.length;
+
+    const highestCardsHypnosRefs = targetCardsRef.current
+      ?.getCardsRef()
+      .filter((cardRef) => !cardRef.playedAt) // Exclude played cards
+      .slice(-numCardsToMove);
+
+    if (
+      !highestCardsHypnosRefs ||
+      highestCardsHypnosRefs.length < numCardsToMove
+    )
+      return;
+
+    highestCardsHypnosRefs.forEach((cardRef) => {
+      // Update the card's position
+      cardRef.card = { ...cardRef.card, position: 2, isTurnedOff: true };
+      cardRef.offsetX.value = withSpring(0, {
+        stiffness: 100,
+        damping: 20,
+      });
 
       // Remove Card to the current player
-      cardsRef?.current?.handleRemoveCard(cards);
+      targetCardsRef?.current?.handleRemoveCards([cardRef.card]);
+      targetCardsRef?.current?.handleAddCard(cardRef);
+    });
+  };
 
-      return;
+  const onCardsPlayed = (
+    cardsRef: RefObject<PlayerCardsHandle>,
+    targetCardsRef: RefObject<PlayerCardsHandle>,
+    cards: Card[]
+  ) => {
+    const latestCardPlayed = getLatestCardPlayed(game.cardsPlayed);
+    const cardValue = cards[0].value;
+    const latestCardPlayedByCurrentPlayer =
+      game?.cardsPlayed?.[0]?.playerId === game.currentPlayer.id;
+
+    switch (true) {
+      case latestCardPlayed?.value === CardType.ARTEMIS &&
+        latestCardPlayedByCurrentPlayer:
+        moveArtemisCards(cardsRef, targetCardsRef, cards);
+        playArtemis(cards);
+        break;
+
+      case cardValue === CardType.HADES:
+        moveHadesCards(cardsRef, targetCardsRef, cards);
+        break;
+
+      case cardValue === CardType.HYPNOS:
+        moveHypnosCards(targetCardsRef, cards);
+        break;
+
+      default:
+        break;
     }
+
     playCards(cards);
   };
 
@@ -256,6 +336,8 @@ const useCardsAnimation = () => {
     initializeCardPositions,
     moveCardsToCenter,
     moveCardsOut,
+    moveHadesCards,
+    moveHypnosCards,
     onCardsPlayed,
   };
 };

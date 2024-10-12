@@ -4,7 +4,7 @@ import 'react-native-gesture-handler'; // Must be at the top
 import React, { RefObject, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { Card, Game } from 'gameFunctions';
+import { ActionName, canNoPlayerPlayAnyCard, Card, Game } from 'gameFunctions';
 
 import { sortedBotCards, sortedCards } from 'app/handlers';
 import PlayerCards, { PlayerCardsHandle } from './PlayerCards';
@@ -15,20 +15,19 @@ import CardsPile from './CardsPile';
 import ButtonAction from './ButtonAction';
 import { RootState } from 'app/reducers';
 import { useSelector } from 'react-redux';
-import GameModalArtemis from './GameModalArtemis';
-import { getLatestCardPlayed } from './utils';
-import useCardsAnimation, { CardAnimatedType } from './useCardsAnimation';
+import useCardsAnimation from './useCardsAnimation';
 
 const GameView: React.FC = () => {
   const game = useSelector((state: RootState) => state.game);
-  const { playCards, playArtemis, skipTurn } = useGameplay();
+  const { skipTurn } = useGameplay();
   const { onCardsPlayed } = useCardsAnimation();
 
   const selfPlayerCards = sortedCards(game.players);
   const opponentPlayerCards = sortedBotCards(game.players);
-  const opponentPlayerArtemisCards = sortedBotCards(
+  const selfPlayerReceivedCards = sortedCards(game.players, 'cardsReceived');
+  const opponentPlayerReceivedCards = sortedBotCards(
     game.players,
-    'cardsArtemisReceived'
+    'cardsReceived'
   );
   const cardsPlayed = game?.cardsPlayed || [];
 
@@ -36,6 +35,40 @@ const GameView: React.FC = () => {
   const opponentPlayerCardsRef = useRef<PlayerCardsHandle>(null);
 
   if (!game) return <View />;
+
+  function getPlayableCards(player: Player, game: Game): Card[] {
+    // Collect all cards received by opponents
+    const opponentCardsReceived = game.players
+      .filter((opponent) => opponent.id !== player.id)
+      .flatMap((opponent) => opponent.cardsReceived);
+
+    // Collect all cards that have been played currently
+    const playedCards = game.cardsPlayed.flatMap(
+      (history) => history.cardsPlayed
+    );
+
+    // Collect all cards that have been played and discarded already
+    const discardedCards = game.discardPile;
+
+    // Add cards received by the current player from others
+    const currentPlayerCards = [...player.cards, ...player.cardsReceived];
+
+    // Filter out cards that have been given to opponents or already played
+    return currentPlayerCards.filter(
+      (card) =>
+        !opponentCardsReceived.some(
+          (receivedCard) => receivedCard.id === card.id
+        ) &&
+        !playedCards.some((playedCard) => playedCard.id === card.id) &&
+        !discardedCards.some((playedCard) => playedCard.id === card.id)
+    );
+  }
+
+  console.log(
+    'bbb',
+    game.players[0].id,
+    getPlayableCards(game.players[1], game)?.map((c) => c.value)
+  );
 
   return (
     <GameBackgroundView>
@@ -45,29 +78,32 @@ const GameView: React.FC = () => {
         ref={opponentPlayerCardsRef}
         cards={opponentPlayerCards}
         cardsPlayed={cardsPlayed}
-        cardsArtemisReceived={opponentPlayerArtemisCards}
+        cardsReceived={opponentPlayerReceivedCards}
         gameCreatedAt={game.createdAt}
         onCardsPlayed={(cards: Card[]) =>
           onCardsPlayed(opponentPlayerCardsRef, selfPlayerCardsRef, cards)
         }
         isOpponent
+        isOnArtemisSelection={game.action?.id === ActionName.ARTEMIS}
+        isPlayable={game.currentPlayer.id === 'bot'}
       />
-      {game.currentPlayer.id !== 'bot' && (
-        <ButtonAction
-          label='Skip'
-          onPress={skipTurn}
-          style={styles.buttonActionContainer}
-        />
-      )}
+      <ButtonAction
+        label='Skip'
+        onPress={skipTurn}
+        style={styles.buttonActionContainer}
+      />
+
       <PlayerCards
         ref={selfPlayerCardsRef}
         cards={selfPlayerCards}
         cardsPlayed={cardsPlayed}
-        cardsArtemisReceived={[]}
+        cardsReceived={selfPlayerReceivedCards}
         gameCreatedAt={game.createdAt}
         onCardsPlayed={(cards: Card[]) =>
           onCardsPlayed(selfPlayerCardsRef, opponentPlayerCardsRef, cards)
         }
+        isOnArtemisSelection={game.action?.id === ActionName.ARTEMIS}
+        isPlayable={game.currentPlayer.id !== 'bot'}
       />
     </GameBackgroundView>
   );
