@@ -16,6 +16,7 @@ import {
   playJoker,
   playHades,
   playHypnos,
+  ActionName,
 } from 'gameFunctions';
 import { RootState } from '../reducers';
 import { ThunkDispatch } from '@reduxjs/toolkit';
@@ -23,6 +24,7 @@ import { ThunkDispatch } from '@reduxjs/toolkit';
 // Define action types
 export const START_GAME = 'START_GAME';
 export const PLAY_CARDS = 'PLAY_CARDS';
+export const SET_CURRENT_PLAYER = 'SET_CURRENT_PLAYER';
 export const SKIP_TURN = 'SKIP_TURN';
 export const PLAY_ARTEMIS = 'PLAY_ARTEMIS';
 export const PLAY_HADES = 'PLAY_HADES';
@@ -35,11 +37,17 @@ export type GameAction =
   | PlayCardAction
   | SkipTurnAction
   | PlayArtemisAction
-  | PlayJokerAction;
+  | PlayJokerAction
+  | SetCurrentPlayerAction;
 
 // Define action interfaces
 interface StartGameAction {
   type: typeof START_GAME;
+  payload: Game;
+}
+// Define action interfaces
+interface SetCurrentPlayerAction {
+  type: typeof SET_CURRENT_PLAYER;
   payload: Game;
 }
 
@@ -83,6 +91,29 @@ export const actionPlayCards = (
         payload: { ...currentGame, ...game },
       });
     }
+  };
+};
+
+export const actionSetCurrentPlayer = (
+  currentPlayer: Player
+): ThunkAction<void, RootState, unknown, AnyAction> => {
+  return (
+    dispatch: ThunkDispatch<RootState, unknown, SetCurrentPlayerAction>,
+    getState: () => RootState
+  ) => {
+    const game = getState().game;
+
+    const action = {
+      id: ActionName.CURRENT_PLAYER,
+      playerId: currentPlayer.id,
+    };
+
+    // if (game) {
+    //   dispatch({
+    //     type: SET_CURRENT_PLAYER,
+    //     payload: { ...game, action },
+    //   });
+    // }
   };
 };
 

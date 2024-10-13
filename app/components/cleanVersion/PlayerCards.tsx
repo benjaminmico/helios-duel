@@ -24,7 +24,6 @@ import useCardsAnimation, { CardAnimatedType } from './useCardsAnimation';
 interface IPlayerCards {
   cards: CardType[];
   cardsPlayed: CardHistory[];
-  cardsReceived: Card[];
   gameCreatedAt: string;
   onCardsPlayed: (cards: CardType[]) => void;
   isOpponent?: boolean;
@@ -60,7 +59,7 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
 
     const cardsRef = useRef<CardAnimatedType[]>(
       cards.map((card: CardType) => ({
-        card,
+        card: { ...card }, // create new object to avoid immutability
         offsetX: useSharedValue(0),
         offsetY: useSharedValue(0),
         scaleX: useSharedValue(1),
@@ -117,58 +116,47 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
         const cardsToMove = cardsRef.current.filter(
           (c) => !!c.playedAt && !c.isOut
         );
-        moveCardsOut(cardsToMove);
+        setTimeout(() => moveCardsOut(cardsToMove), 1000);
       }
-    }, [cardsPlayed?.length]);
+    }, [cardsPlayed]);
 
     const handleDefaultCardPress = useCallback(
       (animatedCard: CardAnimatedType) => {
         const cardToPlay: Card = animatedCard.card;
         const sameValueCards = cardsRef.current.filter(
-          (c) => c.card.value === cardToPlay.value && !c.playedAt
+          (c) => c.card.position === cardToPlay.position && !c.playedAt
         );
 
         const isDifferentValueSelected = selectedCards.some(
-          (c) => c.value !== cardToPlay.value
+          (c) => c.position !== cardToPlay.position
         );
-        const latestCardsPlayedLength = cardsPlayed?.length
-          ? cardsPlayed?.[0].cardsPlayed.length
-          : 0;
 
         if (isDifferentValueSelected) {
           return;
         }
 
-        // If selected cards exceed the latest cards played length
-        if (
-          !!selectedCards?.length &&
-          latestCardsPlayedLength &&
-          selectedCards.length >= latestCardsPlayedLength
-        )
-          return;
+        const latestCardsPlayedLength =
+          cardsPlayed?.[0]?.cardsPlayed.length || 0;
 
-        switch (true) {
-          case latestCardsPlayedLength === 1:
-          case sameValueCards.length <= 1:
-            // Case: Latest cards length play is 1 or only one card with the same value
-            moveCardsToCenter([animatedCard]);
-            // lockUnplayableCards(cardsRef.current, [cardToPlay]);
-            onCardsPlayed([cardToPlay]);
-            break;
-          default:
-            // Case: Multiple cards with the same value, add to selection
-            setSelectedCards((prev) => [...prev, cardToPlay]);
-            break;
+        // If no cards have been played yet or selected cards exceed the latest cards played length
+        if (
+          selectedCards.length >= sameValueCards.length ||
+          (latestCardsPlayedLength &&
+            selectedCards.length >= latestCardsPlayedLength)
+        ) {
+          return;
+        }
+
+        if (latestCardsPlayedLength === 1 || sameValueCards.length <= 1) {
+          // Case: Latest cards length play is 1 or only one card with the same value
+          moveCardsToCenter([animatedCard]);
+          onCardsPlayed([cardToPlay]);
+        } else {
+          // Case: Multiple cards with the same value, add to selection
+          setSelectedCards((prev) => [...prev, cardToPlay]);
         }
       },
-      [
-        cards,
-        selectedCards,
-        moveCardsToCenter,
-        onCardsPlayed,
-        isOpponent,
-        cardsPlayed,
-      ]
+      [selectedCards, moveCardsToCenter, onCardsPlayed, cardsPlayed]
     );
 
     const handleArtemisCardPress = useCallback(
@@ -189,20 +177,11 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
     const handleCardPress = useCallback(
       (animatedCard: CardAnimatedType) => {
         setRender((prev) => !prev);
-        if (!cardsPlayed?.length) {
-          handleDefaultCardPress(animatedCard);
+        if (isOnArtemisSelection) {
+          handleArtemisCardPress(animatedCard);
           return;
         }
-        const latestCardPlayed = getLatestCardPlayed(cardsPlayed);
-        if (!latestCardPlayed) return handleDefaultCardPress(animatedCard);
-
-        switch (latestCardPlayed.value) {
-          case 'ARTEMIS':
-            handleArtemisCardPress(animatedCard);
-            break;
-          default:
-            handleDefaultCardPress(animatedCard);
-        }
+        handleDefaultCardPress(animatedCard);
       },
       [
         cards,
@@ -218,7 +197,6 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
       const latestCardPlayed = getLatestCardPlayed(cardsPlayed);
 
       if (latestCardPlayed?.value === 'ARTEMIS') {
-        console.log('selectedCards', selectedCards);
         onCardsPlayed(selectedCards);
         setSelectedCards([]);
         return;
@@ -262,7 +240,9 @@ const PlayerCards = forwardRef<PlayerCardsHandle, IPlayerCards>(
         {!!cardsRef?.current?.length &&
           cardsRef.current.map((cardAnimated) => (
             <CardAnimated
-              pointerEvents={isPlayable ? 'auto' : 'none'}
+              pointerEvents={
+                isPlayable && !cardAnimated.playedAt ? 'auto' : 'none'
+              }
               key={cardAnimated.card.id}
               cardAnimated={cardAnimated}
               cardLocked={isCardLocked(

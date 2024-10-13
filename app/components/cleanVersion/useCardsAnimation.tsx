@@ -18,7 +18,13 @@ import {
 import { Dimensions } from 'react-native';
 import { CARD_HEIGHT, CARD_WIDTH } from './CardAnimated';
 import { calculatePlayedCardZIndex, getLatestCardPlayed } from './utils';
-import { Card, CardHistory, CardType } from 'gameFunctions';
+import {
+  Card,
+  CardHistory,
+  CardType,
+  isSpecialCard,
+  specialCards,
+} from 'gameFunctions';
 import { PlayerCardsHandle } from './PlayerCards';
 import { useGameplay } from './useGameplay';
 
@@ -285,14 +291,17 @@ const useCardsAnimation = () => {
       return;
 
     highestCardsHypnosRefs.forEach((cardRef) => {
-      // Update the card's position
-      cardRef.card = { ...cardRef.card, position: 2, isTurnedOff: true };
+      // Directly modify the properties of the cardRef.card
+      cardRef.card.id = cardRef.card.id;
+      cardRef.card.position = 2;
+      cardRef.card.isTurnedOff = true;
+
       cardRef.offsetX.value = withSpring(0, {
         stiffness: 100,
         damping: 20,
       });
 
-      // Remove Card to the current player
+      // Ensure that the card is removed and added correctly
       targetCardsRef?.current?.handleRemoveCards([cardRef.card]);
       targetCardsRef?.current?.handleAddCard(cardRef);
     });
@@ -304,27 +313,40 @@ const useCardsAnimation = () => {
     cards: Card[]
   ) => {
     const latestCardPlayed = getLatestCardPlayed(game.cardsPlayed);
-    const cardValue = cards[0].value;
-    const latestCardPlayedByCurrentPlayer =
+    const isLatestCardPlayedByCurrentPlayer =
       game?.cardsPlayed?.[0]?.playerId === game.currentPlayer.id;
 
-    switch (true) {
-      case latestCardPlayed?.value === CardType.ARTEMIS &&
-        latestCardPlayedByCurrentPlayer:
-        moveArtemisCards(cardsRef, targetCardsRef, cards);
-        playArtemis(cards);
-        break;
+    const handleArtemisCard = () => {
+      moveArtemisCards(cardsRef, targetCardsRef, cards);
+      playArtemis(cards);
+    };
 
-      case cardValue === CardType.HADES:
-        moveHadesCards(cardsRef, targetCardsRef, cards);
-        break;
+    const handleHadesCard = () => {
+      moveHadesCards(cardsRef, targetCardsRef, cards);
+    };
 
-      case cardValue === CardType.HYPNOS:
-        moveHypnosCards(targetCardsRef, cards);
-        break;
+    const handleHypnosCard = () => {
+      moveHypnosCards(targetCardsRef, cards);
+    };
 
-      default:
-        break;
+    if (
+      latestCardPlayed?.value === CardType.ARTEMIS &&
+      !latestCardPlayed?.isArtemisCardGiven &&
+      isSpecialCard(CardType.ARTEMIS, latestCardPlayed.position) &&
+      isLatestCardPlayedByCurrentPlayer
+    ) {
+      handleArtemisCard();
+      return;
+    } else if (
+      cards[0].value === CardType.HADES &&
+      isSpecialCard(CardType.HADES, cards[0].position)
+    ) {
+      handleHadesCard();
+    } else if (
+      cards[0].value === CardType.HYPNOS &&
+      isSpecialCard(CardType.HYPNOS, cards[0].position)
+    ) {
+      handleHypnosCard();
     }
 
     playCards(cards);

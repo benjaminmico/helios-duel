@@ -145,7 +145,7 @@ export const getPlayer = (
 
 export const selfPlayerCards = (
   players: Player[],
-  type: 'cards' | 'cardsReceived' = 'cards'
+  type: 'cards' | 'liveCards' = 'cards'
 ) => {
   const selfCards = players.find((player) => player.id !== 'bot')?.[type] || [];
   return selfCards.sort((a, b) => a.position - b.position);
@@ -153,7 +153,7 @@ export const selfPlayerCards = (
 
 export const opponentPlayerCards = (
   players: Player[],
-  type: 'cards' | 'cardsReceived' = 'cards'
+  type: 'cards' | 'liveCards' = 'cards'
 ) => {
   const opponentCards =
     players.find((player) => player.id === 'bot')?.[type] || [];
@@ -162,11 +162,11 @@ export const opponentPlayerCards = (
 
 export const sortedBotCards = (
   players: Player[],
-  type: 'cards' | 'cardsReceived' = 'cards'
+  type: 'cards' | 'liveCards' = 'cards'
 ) => _.sortBy(opponentPlayerCards(players, type), 'position');
 export const sortedCards = (
   players: Player[],
-  type: 'cards' | 'cardsReceived' = 'cards'
+  type: 'cards' | 'liveCards' = 'cards'
 ) => _.sortBy(selfPlayerCards(players, type), 'position');
 
 export const getGameCardsHistory = (cardsPlayed: CardHistory[]) =>

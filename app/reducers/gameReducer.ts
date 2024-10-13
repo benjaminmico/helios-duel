@@ -4,6 +4,7 @@ import {
   PLAY_ARTEMIS,
   PLAY_CARDS,
   PLAY_JOKER,
+  SET_CURRENT_PLAYER,
   SKIP_TURN,
   START_GAME,
 } from '../actions/gameActions';
@@ -28,6 +29,8 @@ const gameReducer = (state = initialState, action: GameAction): Game => {
     case PLAY_ARTEMIS:
       return action.payload;
     case PLAY_JOKER:
+      return action.payload;
+    case SET_CURRENT_PLAYER:
       return action.payload;
     default:
       return state;

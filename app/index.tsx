@@ -65,12 +65,12 @@ const App = () => {
     const player: Player = {
       id: playerName,
       cards: [],
-      cardsReceived: [],
+      liveCards: [],
     };
     const bot: Player = {
       id: 'bot',
       cards: [],
-      cardsReceived: [],
+      liveCards: [],
     };
 
     const game = initializeGame([player, bot], deck);

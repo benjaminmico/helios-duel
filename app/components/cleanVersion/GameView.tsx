@@ -1,10 +1,17 @@
 // App.js
 
 import 'react-native-gesture-handler'; // Must be at the top
-import React, { RefObject, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { RefObject, useEffect, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 
-import { ActionName, canNoPlayerPlayAnyCard, Card, Game } from 'gameFunctions';
+import {
+  ActionName,
+  canNoPlayerPlayAnyCard,
+  canPlayCard,
+  Card,
+  Game,
+  Player,
+} from 'gameFunctions';
 
 import { sortedBotCards, sortedCards } from 'app/handlers';
 import PlayerCards, { PlayerCardsHandle } from './PlayerCards';
@@ -19,16 +26,13 @@ import useCardsAnimation from './useCardsAnimation';
 
 const GameView: React.FC = () => {
   const game = useSelector((state: RootState) => state.game);
-  const { skipTurn } = useGameplay();
+  const { skipTurn, setCurrentPlayer } = useGameplay();
   const { onCardsPlayed } = useCardsAnimation();
 
   const selfPlayerCards = sortedCards(game.players);
   const opponentPlayerCards = sortedBotCards(game.players);
-  const selfPlayerReceivedCards = sortedCards(game.players, 'cardsReceived');
-  const opponentPlayerReceivedCards = sortedBotCards(
-    game.players,
-    'cardsReceived'
-  );
+  const selfPlayerReceivedCards = sortedCards(game.players, 'liveCards');
+  const opponentPlayerReceivedCards = sortedBotCards(game.players, 'liveCards');
   const cardsPlayed = game?.cardsPlayed || [];
 
   const selfPlayerCardsRef = useRef<PlayerCardsHandle>(null);
@@ -36,55 +40,67 @@ const GameView: React.FC = () => {
 
   if (!game) return <View />;
 
-  function getPlayableCards(player: Player, game: Game): Card[] {
-    // Collect all cards received by opponents
-    const opponentCardsReceived = game.players
-      .filter((opponent) => opponent.id !== player.id)
-      .flatMap((opponent) => opponent.cardsReceived);
+  useEffect(() => {
+    setTimeout(() => {
+      setCurrentPlayer(game.currentPlayer);
+    }, 2000);
+  }, [game?.currentPlayer]);
 
-    // Collect all cards that have been played currently
-    const playedCards = game.cardsPlayed.flatMap(
-      (history) => history.cardsPlayed
-    );
+  function getPlayableCards(game: Game): { playerId: string; cards: Card[] }[] {
+    const playableCards: { playerId: string; cards: Card[] }[] = [];
 
-    // Collect all cards that have been played and discarded already
-    const discardedCards = game.discardPile;
+    for (const player of game.players) {
+      const currentPlayerCards = player.liveCards;
+      const playerPlayableCards: Card[] = [];
 
-    // Add cards received by the current player from others
-    const currentPlayerCards = [...player.cards, ...player.cardsReceived];
+      for (const card of currentPlayerCards) {
+        const canPlay = canPlayCard(card, currentPlayerCards, game.cardsPlayed);
 
-    // Filter out cards that have been given to opponents or already played
-    return currentPlayerCards.filter(
-      (card) =>
-        !opponentCardsReceived.some(
-          (receivedCard) => receivedCard.id === card.id
-        ) &&
-        !playedCards.some((playedCard) => playedCard.id === card.id) &&
-        !discardedCards.some((playedCard) => playedCard.id === card.id)
-    );
+        if (canPlay) {
+          playerPlayableCards.push(card);
+        }
+      }
+
+      if (playerPlayableCards.length > 0) {
+        playableCards.push({ playerId: player.id, cards: playerPlayableCards });
+      }
+    }
+
+    // Log the playable cards for each player
+    // for (const entry of playableCards) {
+    //   console.log(
+    //     `Player ${entry.playerId} can play:`,
+    //     entry.cards.map((card) => card.value)
+    //   );
+    // }
+
+    return playableCards; // Return the list of playable cards
   }
 
-  console.log(
-    'bbb',
-    game.players[0].id,
-    getPlayableCards(game.players[1], game)?.map((c) => c.value)
-  );
+  getPlayableCards(game);
 
   return (
     <GameBackgroundView>
+      <Text
+        style={{ position: 'absolute', color: 'white', top: 270, left: 200 }}
+      >
+        {game.currentPlayer.id}
+      </Text>
       <GameInformations game={game} style={styles.gameInformationsContainer} />
       <CardsPile game={game} style={styles.cardsPileContainer} />
       <PlayerCards
         ref={opponentPlayerCardsRef}
         cards={opponentPlayerCards}
         cardsPlayed={cardsPlayed}
-        cardsReceived={opponentPlayerReceivedCards}
         gameCreatedAt={game.createdAt}
         onCardsPlayed={(cards: Card[]) =>
           onCardsPlayed(opponentPlayerCardsRef, selfPlayerCardsRef, cards)
         }
         isOpponent
-        isOnArtemisSelection={game.action?.id === ActionName.ARTEMIS}
+        isOnArtemisSelection={
+          game.action?.id === ActionName.ARTEMIS &&
+          game.currentPlayer.id === 'bot'
+        }
         isPlayable={game.currentPlayer.id === 'bot'}
       />
       <ButtonAction
@@ -97,12 +113,14 @@ const GameView: React.FC = () => {
         ref={selfPlayerCardsRef}
         cards={selfPlayerCards}
         cardsPlayed={cardsPlayed}
-        cardsReceived={selfPlayerReceivedCards}
         gameCreatedAt={game.createdAt}
         onCardsPlayed={(cards: Card[]) =>
           onCardsPlayed(selfPlayerCardsRef, opponentPlayerCardsRef, cards)
         }
-        isOnArtemisSelection={game.action?.id === ActionName.ARTEMIS}
+        isOnArtemisSelection={
+          game.action?.id === ActionName.ARTEMIS &&
+          game.currentPlayer.id !== 'bot'
+        }
         isPlayable={game.currentPlayer.id !== 'bot'}
       />
     </GameBackgroundView>

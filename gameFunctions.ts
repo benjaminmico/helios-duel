@@ -11,12 +11,13 @@ export interface Card {
   value: string;
   position: number;
   isTurnedOff: boolean;
+  isArtemisCardGiven?: boolean;
 }
 
 export interface Player {
   id: string;
   cards: Card[];
-  cardsReceived: Card[]; // handle separately to avoid rerendering
+  liveCards: Card[];
 }
 
 export interface CardHistory {
@@ -65,6 +66,7 @@ export enum ActionName {
   GAME_FINISHED = 'GAME_FINISHED',
   GAME_FINISHED_ARTEMIS = 'GAME_FINISHED_ARTEMIS',
   GAME_FINISHED_GOD = 'GAME_FINISHED_GOD',
+  CURRENT_PLAYER = 'CURRENT_PLAYER',
 }
 
 export type Action = {
@@ -101,7 +103,7 @@ export type CardGod =
   | CardType.ARTEMIS
   | CardType.HYPNOS;
 
-function addAction(action: Action): Action {
+export function addAction(action: Action): Action {
   return action;
 }
 
@@ -199,7 +201,7 @@ for (const suit of suits) {
 //   return 13;
 
 // Define the special cards (JOKER, HADES, ARTEMIS, HYPNOS)
-const specialCards: Card[] = [
+export const specialCards: Card[] = [
   {
     id: uuidv4(),
     type: CardType.HYPNOS,
@@ -276,14 +278,14 @@ export function diceDuel(
     const diceRollPlayer1 = rollDice();
     const diceRollPlayer2 = rollDice();
 
-    console.log(`${player1.id} rolled: ${diceRollPlayer1}`);
-    console.log(`${player2.id} rolled: ${diceRollPlayer2}`);
+    // console.log(`${player1.id} rolled: ${diceRollPlayer1}`);
+    // console.log(`${player2.id} rolled: ${diceRollPlayer2}`);
 
     if (diceRollPlayer1 > diceRollPlayer2) {
-      console.log(`${player1.id} wins the dice duel!`);
+      // console.log(`${player1.id} wins the dice duel!`);
       return { winnerDicePlayer: player1, looserDicePlayer: player2 };
     } else if (diceRollPlayer1 < diceRollPlayer2) {
-      console.log(`${player2.id} wins the dice duel!`);
+      // console.log(`${player2.id} wins the dice duel!`);
       return { winnerDicePlayer: player2, looserDicePlayer: player1 };
     } else {
       console.log("It's a tie! Rolling the dice again...");
@@ -309,15 +311,18 @@ export function distributeCards(game: Game): void {
   const numberOfPlayers = players.length;
   const totalCards = numberOfPlayers * 14;
 
-  if (deck.length < totalCards) {
-    console.log('Not enough cards in the deck to distribute to players.');
+  if (deck.length < totalCards - 3) {
+    // Adjust for the 3 cards already assigned
+    // console.log('Not enough cards in the deck to distribute to players.');
     return;
   }
 
-  for (let i = 0; i < totalCards; i++) {
+  // Distribute the remaining cards
+  for (let i = 0; i < totalCards - 3; i++) {
     const playerIndex = i % numberOfPlayers;
     const card = deck.pop()!;
-    players[playerIndex].cards.push(card);
+    players[playerIndex].cards.push(card); // Initial state cards
+    players[playerIndex].liveCards.push(card); // Live state cards
   }
 }
 
@@ -334,7 +339,7 @@ export function initializeGame(players: Player[], deck: Card[]): Game {
     chosenLevel: BotDifficulty.EASY,
   };
 
-  console.log('Initiating dice duel to determine the starting player...');
+  // console.log('Initiating dice duel to determine the starting player...');
 
   while (true) {
     const result = diceDuel(players[0], players[1]);
@@ -348,9 +353,9 @@ export function initializeGame(players: Player[], deck: Card[]): Game {
         winnerDicePlayerId: winnerDicePlayer.id,
         looserDicePlayerId: looserDicePlayer.id,
       });
-      console.log(
-        `${winnerDicePlayer.id} wins the dice duel and starts the game!`
-      );
+      // console.log(
+      //   `${winnerDicePlayer.id} wins the dice duel and starts the game!`
+      // );
       break;
     }
   }
@@ -365,7 +370,7 @@ export function drawCardFromDeck(game: Game): Card | null {
   const { deck } = game;
 
   if (deck.length === 0) {
-    console.log('The deck is empty. Cannot draw a card.');
+    // console.log('The deck is empty. Cannot draw a card.');
     return null;
   }
 
@@ -385,7 +390,7 @@ export function skipTurn(game: Game): Game {
     playerId: currentPlayer.id,
     nextPlayerId: game.currentPlayer.id,
   });
-  console.log(`${currentPlayer} skip turn`);
+  // console.log(`${currentPlayer} skip turn`);
   return game;
 }
 
@@ -393,13 +398,13 @@ export function skipTurn(game: Game): Game {
 export function rollDiceAndSkipTurn(game: Game): Game {
   const { currentPlayer } = game;
   const diceRoll = rollDice();
-  console.log(`${currentPlayer.id} rolled: ${diceRoll}`);
+  // console.log(`${currentPlayer.id} rolled: ${diceRoll}`);
 
   if (diceRoll <= 3) {
     // Draw a card from the remaining deck and give the hand to the other player
     const drawnCard = drawCardFromDeck(game);
     if (drawnCard) {
-      console.log(`${currentPlayer.id} drew a card: ${drawnCard.value}`);
+      // console.log(`${currentPlayer.id} drew a card: ${drawnCard.value}`);
       game.action = addAction({
         id: ActionName.DICE_ROLL_PICK_CARD,
         playerId: game.currentPlayer.id,
@@ -516,18 +521,18 @@ export function canPlayMultipleCards(
 export function playCards(game: Game, cards: Card[]): Game | null {
   // Find the player who has the first card in the cards array
   const currentPlayer = game.players.find((player) =>
-    player.cards.some((card) => card.id === cards[0].id)
+    player.liveCards.some((liveCard) => liveCard.id === cards[0].id)
   );
 
   let newGame = game;
 
   if (!currentPlayer) {
-    console.log('Player not found for the given cards');
+    // console.log('Player not found for the given cards');
     return null;
   }
 
   if (game.currentPlayer !== currentPlayer) {
-    console.log("It's not the current player's turn");
+    // console.log("It's not the current player's turn");
     return null;
   }
 
@@ -553,7 +558,7 @@ export function playCards(game: Game, cards: Card[]): Game | null {
 
   newGame = handlePowerCards(newGame, cards);
 
-  if (canNoPlayerPlayAnyCard(newGame)) {
+  if (canNoPlayerPlayAnyCard(newGame) && cards[0]?.value !== CardType.ARTEMIS) {
     newGame = cleanCardTable(game);
   }
 
@@ -563,15 +568,9 @@ export function playCards(game: Game, cards: Card[]): Game | null {
 export function playJoker(game: Game, cards: Card[]): Game | null {
   if (cards?.[0]?.value !== 'JOKER') return game;
 
-  const currentPlayer = game.players.find((player) =>
-    player.cards.some((card) => card.id === cards[0].id)
-  );
-
-  if (!currentPlayer) return game;
-
   game.action = addAction({
     id: ActionName.JOKER,
-    playerId: currentPlayer.id,
+    playerId: game.currentPlayer.id,
   });
   let newGame = cleanCardTable(game);
 
@@ -581,9 +580,14 @@ export function playJoker(game: Game, cards: Card[]): Game | null {
 export function playArtemis(game: Game, cardsToPass: Card[]): Game {
   let newGame = game;
 
+  // Check if there are any cards played
+  if (!game.cardsPlayed[0]) {
+    return game;
+  }
+
   // Find the player who has the first card in the cards array
   const currentPlayer = game.players.find((player) =>
-    player.cards.some((card) => card.id === cardsToPass[0].id)
+    player.liveCards.some((card) => card.id === cardsToPass[0].id)
   );
 
   if (!currentPlayer) return game;
@@ -596,13 +600,15 @@ export function playArtemis(game: Game, cardsToPass: Card[]): Game {
     return newGame;
   }
 
-  console.log('player ids', currentPlayer.id, targetPlayer.id);
-
-  // // Remove the card from the player's hand
-  // newGame = removePlayerCards(newGame, currentPlayer, cardsToPass);
   // Add the card to the target player's hand
-
   newGame = addCardsToPlayer(newGame, targetPlayer, cardsToPass);
+
+  // Check the latest cards played and set isArtemisCardGiven to true for Artemis cards
+  game.cardsPlayed[0].cardsPlayed.forEach((card) => {
+    if (card.type === CardType.ARTEMIS) {
+      card.isArtemisCardGiven = true;
+    }
+  });
 
   newGame.action = addAction({
     id: ActionName.ARTEMIS_GIVED,
@@ -611,12 +617,16 @@ export function playArtemis(game: Game, cardsToPass: Card[]): Game {
     cards: cardsToPass.map((card) => card.value),
   });
 
-  console.log(
-    `Artemis - ${JSON.stringify(
-      cardsToPass.map((card) => card.value)
-    )} gived to ${targetPlayer.id} through Artemis`
-  );
+  // console.log(
+  //   `Artemis - ${JSON.stringify(
+  //     cardsToPass.map((card) => card.value)
+  //   )} gived to ${targetPlayer.id} through Artemis`
+  // );
   newGame = changePlayerHand(newGame);
+
+  if (canNoPlayerPlayAnyCard(newGame)) {
+    newGame = cleanCardTable(newGame);
+  }
 
   return newGame;
 }
@@ -637,9 +647,6 @@ export function playHades(game: Game): Game {
   // Determine the best card of the target player
   const bestCard = findBestCard(targetPlayer);
 
-  // // Remove the best card from the target player's hand
-  // newGame = removePlayerCards(newGame, targetPlayer, [bestCard]);
-
   newGame = addCardsToPlayer(newGame, game.currentPlayer, [bestCard]);
 
   newGame.action = addAction({
@@ -648,9 +655,9 @@ export function playHades(game: Game): Game {
     targetPlayerId: targetPlayer.id,
     card: bestCard.value,
   });
-  console.log(
-    `Hades - best card removed from ${targetPlayer.id}, ${bestCard.type}`
-  );
+  // console.log(
+  //   `Hades - best card removed from ${targetPlayer.id}, ${bestCard.type}`
+  // );
 
   // Successful action
   return newGame;
@@ -668,9 +675,7 @@ export function playHypnos(game: Game): Game {
   const bestCard = findBestCard(targetPlayer);
 
   // Turn off best card
-  const turnedOffCard = getTurnOffCard(game, targetPlayer, bestCard);
-  if (turnedOffCard)
-    newGame = addCardsToPlayer(newGame, targetPlayer, [turnedOffCard]);
+  newGame = setTurnOffCard(game, targetPlayer, bestCard);
 
   newGame.action = addAction({
     id: ActionName.HYPNOS_TURNED_OFF,
@@ -678,8 +683,8 @@ export function playHypnos(game: Game): Game {
     targetPlayerId: targetPlayer.id,
     card: bestCard.value,
   });
-  console.log(`Hypnos - ${bestCard.value} turned off from ${targetPlayer.id}`);
-  console.log(`Current Player - ${game.currentPlayer.id}`);
+  // console.log(`Hypnos - ${bestCard.value} turned off from ${targetPlayer.id}`);
+  // console.log(`Current Player - ${game.currentPlayer.id}`);
 
   return newGame;
 }
@@ -704,13 +709,12 @@ export function isNormalCard(card: Card): boolean {
 
 // Function to clean the card table and add played cards to the discard pile
 export function cleanCardTable(game: Game): Game {
+  // console.log('CLEAN CARD TABLE');
   // Move the played cards to the discard pile
   const lastCardsPlayed =
     game.cardsPlayed.length > 0
       ? game.cardsPlayed.flatMap((history) => history.cardsPlayed)
       : [];
-
-  console.log('lastCardsPlayed', lastCardsPlayed);
 
   game.discardPile = [...game.discardPile, ...lastCardsPlayed];
 
@@ -732,19 +736,23 @@ export function changePlayerHand(game: Game): Game {
   return newGame;
 }
 
-function addCardsToPlayer(
-  game: Game,
-  player: Player,
-  cards: Card[],
-  from?: 'deck' | 'artemis'
-): Game {
+function addCardsToPlayer(game: Game, player: Player, cards: Card[]): Game {
   const newGame = game;
   const playerIndex = findPlayerIndex(newGame, player);
 
   // If the player is not found, exit the function
   if (playerIndex === -1) return newGame;
 
-  newGame.players[playerIndex].cardsReceived.push(...cards);
+  // Remove cards from the opponent player
+  for (const opponent of newGame.players) {
+    if (opponent.id !== player.id) {
+      opponent.liveCards = opponent.liveCards.filter(
+        (opponentCard) => !cards.some((card) => card.id === opponentCard.id)
+      );
+    }
+  }
+
+  newGame.players[playerIndex].liveCards.push(...cards);
 
   return newGame;
 }
@@ -759,25 +767,49 @@ function addCardHistoryEntry(game: Game, player: Player, cards: Card[]): Game {
 
   newGame.cardsPlayed.unshift(newEntry);
 
+  // Remove the played cards from the player's liveCards
+  const playerIndex = newGame.players.findIndex((p) => p.id === player.id);
+  if (playerIndex !== -1) {
+    newGame.players[playerIndex].liveCards = newGame.players[
+      playerIndex
+    ].liveCards.filter(
+      (liveCard) => !cards.some((card) => card.id === liveCard.id)
+    );
+  }
+
   return newGame;
+}
+
+export function isSpecialCard(cardType: CardType, cardPosition: number) {
+  return (
+    specialCards.find((c: Card) => c.type === cardType)?.position ===
+    cardPosition
+  );
 }
 
 function handlePowerCards(game: Game, cards: Card[]): Game {
   let newGame = game;
   for (const card of cards) {
-    switch (card.type) {
-      case CardType.ARTEMIS: {
+    switch (true) {
+      case card.type === CardType.ARTEMIS &&
+        isSpecialCard(CardType.ARTEMIS, card.position): {
         return newGame;
       }
 
-      case CardType.HADES: {
+      case card.type === CardType.HADES &&
+        isSpecialCard(CardType.HADES, card.position): {
         newGame = playHades(newGame);
         newGame = changePlayerHand(newGame);
         return newGame;
       }
-      case CardType.HYPNOS: {
+      case card.type === CardType.HYPNOS &&
+        isSpecialCard(CardType.HYPNOS, card.position): {
         newGame = playHypnos(newGame);
         newGame = changePlayerHand(newGame);
+        return newGame;
+      }
+      case card.type === CardType.JOKER &&
+        isSpecialCard(CardType.JOKER, card.position): {
         return newGame;
       }
       default: {
@@ -790,43 +822,39 @@ function handlePowerCards(game: Game, cards: Card[]): Game {
 }
 
 function findBestCard(player: Player): Card {
-  let bestCard = player.cards[0];
-  let bestCardValue = calculateCardValue(bestCard);
+  let bestCard: Card | null = null;
+  let bestCardPosition = -Infinity;
 
-  for (let card of player.cards) {
-    const cardValue = calculateCardValue(card);
-    if (cardValue > bestCardValue) {
+  for (let card of player.liveCards) {
+    if (card.position > bestCardPosition) {
       bestCard = card;
-      bestCardValue = cardValue;
+      bestCardPosition = card.position;
     }
   }
 
-  return bestCard;
+  return bestCard!;
 }
 
-function getTurnOffCard(
-  game: Game,
-  player: Player,
-  targetCard: Card
-): Card | null {
+function setTurnOffCard(game: Game, player: Player, targetCard: Card): Game {
   const newGame = { ...game };
   const playerIndex = findPlayerIndex(newGame, player);
-  let turnedOffCard: Card | null = null;
 
-  // If the player is not found, exit the function
-  if (playerIndex === -1) return null;
+  // If the player is not found, return the original game
+  if (playerIndex === -1) return newGame;
 
   // Find the card and set isTurnedOff to true
-  for (let card of newGame.players[playerIndex].cards) {
-    if (card.type === targetCard.type && card.value === targetCard.value) {
-      card.position = 2;
-      card.isTurnedOff = true;
-      turnedOffCard = card; // Store the reference to the turned off card
+  for (let liveCard of newGame.players[playerIndex].liveCards) {
+    if (
+      liveCard.type === targetCard.type &&
+      liveCard.value === targetCard.value
+    ) {
+      liveCard.position = 2;
+      liveCard.isTurnedOff = true;
       break; // Exit the loop once the card is found and modified
     }
   }
 
-  return turnedOffCard;
+  return newGame;
 }
 
 export function isLastCardArtemis(game: Game): boolean {
@@ -844,18 +872,18 @@ export function isLastCardArtemis(game: Game): boolean {
 }
 
 export function hasArtemisCard(player: Player): boolean {
-  return player.cards.some((card) => card.type === CardType.ARTEMIS);
+  return player.liveCards.some((card) => card.type === CardType.ARTEMIS);
 }
 
 export function getWeakestCard(player: Player): Card | null {
-  if (player.cards.length === 0) {
+  if (player.liveCards.length === 0) {
     return null; // Player has no cards
   }
 
   let weakestCard: Card | null = null;
   let weakestValue: number | null = null;
 
-  for (const card of player.cards) {
+  for (const card of player.liveCards) {
     const cardValue = calculateCardValue(card);
 
     if (weakestCard === null || cardValue < weakestValue!) {
@@ -874,7 +902,7 @@ export function isGameOver(game: Game): {
   reason?: string;
 } {
   for (const player of game.players) {
-    if (player.cards.length === 0) {
+    if (player.liveCards.length === 0) {
       const currentPlayer = game.players.find((p) => p.id === player.id);
       const opponent = game.players.find((p) => p.id !== player.id);
 
@@ -926,51 +954,30 @@ export function isGameOver(game: Game): {
 
 // Function to check if a player has an active Artemis card
 function hasActiveArtemisCard(player: Player): boolean {
-  return player.cards.some(
+  return player.liveCards.some(
     (card) => card.type === CardType.ARTEMIS && !card.isTurnedOff
-  );
-}
-
-function getPlayableCards(player: Player, game: Game): Card[] {
-  // Collect all cards received by opponents
-  const opponentCardsReceived = game.players
-    .filter((opponent) => opponent.id !== player.id)
-    .flatMap((opponent) => opponent.cardsReceived);
-
-  // Collect all cards that have been played currently
-  const playedCards = game.cardsPlayed.flatMap(
-    (history) => history.cardsPlayed
-  );
-
-  // Collect all cards that have been played and discarded already
-  const discardedCards = game.discardPile;
-
-  // Add cards received by the current player from others
-  const currentPlayerCards = [...player.cards, ...player.cardsReceived];
-
-  // Filter out cards that have been given to opponents or already played
-  return currentPlayerCards.filter(
-    (card) =>
-      !opponentCardsReceived.some(
-        (receivedCard) => receivedCard.id === card.id
-      ) &&
-      !playedCards.some((playedCard) => playedCard.id === card.id) &&
-      !discardedCards.some((playedCard) => playedCard.id === card.id)
   );
 }
 
 export function canNoPlayerPlayAnyCard(game: Game): boolean {
   let allCannotPlay = true; // Assume no player can play any card initially
+  const playableCards: { playerId: string; cards: Card[] }[] = [];
 
   for (const player of game.players) {
-    const currentPlayerCards = getPlayableCards(player, game);
+    const currentPlayerCards = player.liveCards;
+    const playerPlayableCards: Card[] = [];
 
     for (const card of currentPlayerCards) {
       const canPlay = canPlayCard(card, currentPlayerCards, game.cardsPlayed);
 
       if (canPlay) {
         allCannotPlay = false; // If any card can be played, set to false
+        playerPlayableCards.push(card);
       }
+    }
+
+    if (playerPlayableCards.length > 0) {
+      playableCards.push({ playerId: player.id, cards: playerPlayableCards });
     }
   }
 

@@ -3,9 +3,10 @@ import {
   actionPlayArtemis,
   actionPlayCards,
   actionPlayJoker,
+  actionSetCurrentPlayer,
   actionSkipTurn,
 } from 'app/actions/gameActions';
-import { Card as CardType } from 'gameFunctions';
+import { Card, CardType, isSpecialCard, Player } from 'gameFunctions';
 import { useDispatch, useSelector } from 'react-redux';
 import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
 import { RootState } from 'app/reducers';
@@ -15,14 +16,17 @@ export const useGameplay = () => {
   const dispatch: ThunkDispatch<RootState, unknown, AnyAction> = useDispatch();
   const game = useSelector((state: RootState) => state.game);
 
-  const playCards = useCallback((cards: CardType[]) => {
+  const playCards = useCallback((cards: Card[]) => {
     dispatch(actionPlayCards(cards));
 
-    const cardValue = cards?.[0]?.value;
+    const card = cards?.[0];
 
     switch (true) {
-      case cardValue === 'JOKER':
-        setTimeout(() => dispatch(actionPlayJoker(cards)), 2000);
+      case card.type === CardType.JOKER &&
+        isSpecialCard(CardType.JOKER, card.position):
+        setTimeout(() => {
+          dispatch(actionPlayJoker(cards));
+        }, 2000);
     }
   }, []);
 
@@ -30,7 +34,6 @@ export const useGameplay = () => {
     const botCards = await getBotCards(game);
     if (!botCards?.length) {
       skipTurn();
-      console.log('Bot play [Skip Turn]');
       return;
     }
     dispatch(actionPlayCards(botCards));
@@ -45,11 +48,16 @@ export const useGameplay = () => {
     dispatch(actionPlayArtemis(cards));
   };
 
+  const setCurrentPlayer = (player: Player) => {
+    dispatch(actionSetCurrentPlayer(player));
+  };
+
   return {
     game,
     playCards,
     playArtemis,
     playBotCards,
     skipTurn,
+    setCurrentPlayer,
   };
 };

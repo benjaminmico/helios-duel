@@ -82,12 +82,15 @@ const GameInformations: FunctionComponent<IGameInformations> = ({
         return `${action.winnerPlayerId} wins the game, but ${action.artemisOwnerPlayerId} has an active Artemis card`;
       case ActionName.GAME_FINISHED_GOD:
         return `${action.winnerPlayerId} wins the game by playing a power card as the last card`;
+      case ActionName.CURRENT_PLAYER:
+        return `It's ${action.playerId} turn`;
       default:
         return null;
     }
   };
 
   const displayedAction = actionToDisplay();
+  console.log(displayedAction);
 
   return (
     <View style={style}>
