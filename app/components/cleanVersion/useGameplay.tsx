@@ -40,8 +40,13 @@ export const useGameplay = () => {
     return botCards;
   };
 
-  const skipTurn = () => {
-    dispatch(actionSkipTurn());
+  const skipTurn = async () => {
+    const { drawnCard, targetPlayer } = await dispatch(actionSkipTurn());
+    // You can now use drawnCard and targetPlayer as needed
+    console.log('Drawn Card:', drawnCard);
+    console.log('Target Player:', targetPlayer?.id);
+
+    return { drawnCard, targetPlayer };
   };
 
   const playArtemis = (cards: CardType[]) => {

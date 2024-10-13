@@ -1,4 +1,4 @@
-import { RefObject, useCallback } from 'react';
+import { RefObject, useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   withSpring,
@@ -17,16 +17,11 @@ import {
 } from './Card';
 import { Dimensions } from 'react-native';
 import { CARD_HEIGHT, CARD_WIDTH } from './CardAnimated';
-import { calculatePlayedCardZIndex, getLatestCardPlayed } from './utils';
-import {
-  Card,
-  CardHistory,
-  CardType,
-  isSpecialCard,
-  specialCards,
-} from 'gameFunctions';
+import { getLatestCardPlayed } from './utils';
+import { Card, CardType, isSpecialCard } from 'gameFunctions';
 import { PlayerCardsHandle } from './PlayerCards';
 import { useGameplay } from './useGameplay';
+import { CardsPileHandle } from './CardsPile';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -39,6 +34,11 @@ type CardAnimatedProps = {
   playable?: boolean;
   isOut?: boolean;
   isTurnedOff?: boolean;
+};
+
+export type TextPileLengthAnimatedProps = {
+  offsetX: SharedValue<number>;
+  offsetY: SharedValue<number>;
 };
 
 export type CardAnimatedType = { card: Card } & CardAnimatedProps;
@@ -93,6 +93,48 @@ const useCardsAnimation = () => {
         card.offsetX.value = withSpring(x, { stiffness: 100, damping: 20 });
         card.offsetY.value = withSpring(y, { stiffness: 300, damping: 20 });
       });
+    });
+  };
+  const initializeCardDeckPositions = (
+    cardsRef: React.MutableRefObject<CardAnimatedType[]>
+  ) => {
+    if (!cardsRef?.current?.length) return;
+    const CARD_MARGIN = 0.2; // Small margin between cards
+
+    const handCards = cardsRef.current.filter((c) => c.playedAt === '');
+
+    const startX = 10;
+    const startY = 400; // Starting Y position for the pile
+
+    handCards.forEach((card, index) => {
+      const x = startX + index * CARD_MARGIN;
+      const y = startY;
+
+      card.offsetX.value = withSpring(x, { stiffness: 100, damping: 20 });
+      card.offsetY.value = withSpring(y, { stiffness: 300, damping: 20 });
+
+      // Reduce the card size by 20%
+      card.scaleX.value = withSpring(0.7, { stiffness: 100, damping: 20 });
+      card.scaleY.value = withSpring(0.7, { stiffness: 100, damping: 20 });
+    });
+  };
+
+  const initializeCardDeckTextLengthPositions = (
+    textRef: React.MutableRefObject<TextPileLengthAnimatedProps>,
+    cardsRef: React.MutableRefObject<CardAnimatedType[]>
+  ) => {
+    if (!textRef?.current) return;
+
+    // Calculate the center X position between the first and last card
+    const centerX = (CARD_WIDTH * 0.8) / 2;
+
+    textRef.current.offsetX.value = withSpring(centerX, {
+      stiffness: 100,
+      damping: 20,
+    });
+    textRef.current.offsetY.value = withSpring(500, {
+      stiffness: 300,
+      damping: 20,
     });
   };
 
@@ -307,6 +349,36 @@ const useCardsAnimation = () => {
     });
   };
 
+  const moveCardsReceivedFromDeck = (
+    deckCardsRef: RefObject<CardsPileHandle>,
+    targetCardsRef: RefObject<PlayerCardsHandle>,
+    cards: Card[]
+  ) => {
+    console.log('ojfriuei', cards[0]?.value);
+    cards.forEach((card) => {
+      const cardRef = deckCardsRef?.current
+        ?.getCardsRef()
+        .find((c) => c && c?.card?.id === card?.id);
+
+      console.log(
+        'cardReff',
+        deckCardsRef?.current?.getCardsRef()?.length,
+        cardRef?.card.id
+      );
+      if (cardRef === undefined) return;
+
+      // Put the card to original size as they are coming from the deck
+      cardRef.scaleX.value = withSpring(1.0, { stiffness: 100, damping: 20 });
+      cardRef.scaleY.value = withSpring(1.0, { stiffness: 100, damping: 20 });
+
+      if (cardRef?.card?.value) {
+        targetCardsRef?.current?.handleAddCard(cardRef);
+      }
+    });
+
+    deckCardsRef?.current?.handleRemoveCards(cards);
+  };
+
   const onCardsPlayed = (
     cardsRef: RefObject<PlayerCardsHandle>,
     targetCardsRef: RefObject<PlayerCardsHandle>,
@@ -356,10 +428,13 @@ const useCardsAnimation = () => {
     initAnimatedProps,
     reorganizeAndSortCards,
     initializeCardPositions,
+    initializeCardDeckPositions,
+    initializeCardDeckTextLengthPositions,
     moveCardsToCenter,
     moveCardsOut,
     moveHadesCards,
     moveHypnosCards,
+    moveCardsReceivedFromDeck,
     onCardsPlayed,
   };
 };

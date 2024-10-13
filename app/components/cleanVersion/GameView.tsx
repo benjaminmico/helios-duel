@@ -1,7 +1,7 @@
 // App.js
 
 import 'react-native-gesture-handler'; // Must be at the top
-import React, { RefObject, useEffect, useRef } from 'react';
+import React, { RefObject, useCallback, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 
 import {
@@ -18,25 +18,27 @@ import PlayerCards, { PlayerCardsHandle } from './PlayerCards';
 import { useGameplay } from './useGameplay';
 import GameBackgroundView from './GameBackgroundView';
 import GameInformations from './GameInformations';
-import CardsPile from './CardsPile';
+import CardsPile, { CardsPileHandle } from './CardsPile';
 import ButtonAction from './ButtonAction';
 import { RootState } from 'app/reducers';
 import { useSelector } from 'react-redux';
 import useCardsAnimation from './useCardsAnimation';
+import { withSpring } from 'react-native-reanimated';
 
 const GameView: React.FC = () => {
   const game = useSelector((state: RootState) => state.game);
   const { skipTurn, setCurrentPlayer } = useGameplay();
-  const { onCardsPlayed } = useCardsAnimation();
+  const { onCardsPlayed, moveCardsReceivedFromDeck } = useCardsAnimation();
 
   const selfPlayerCards = sortedCards(game.players);
   const opponentPlayerCards = sortedBotCards(game.players);
-  const selfPlayerReceivedCards = sortedCards(game.players, 'liveCards');
-  const opponentPlayerReceivedCards = sortedBotCards(game.players, 'liveCards');
   const cardsPlayed = game?.cardsPlayed || [];
-
+  const deckCards = game.deck;
   const selfPlayerCardsRef = useRef<PlayerCardsHandle>(null);
   const opponentPlayerCardsRef = useRef<PlayerCardsHandle>(null);
+  const deckCardsRef = useRef<CardsPileHandle>(null);
+
+  console.log('deckCards', game.deck.length, game.deckCardsGiven.length);
 
   if (!game) return <View />;
 
@@ -46,38 +48,16 @@ const GameView: React.FC = () => {
     }, 2000);
   }, [game?.currentPlayer]);
 
-  function getPlayableCards(game: Game): { playerId: string; cards: Card[] }[] {
-    const playableCards: { playerId: string; cards: Card[] }[] = [];
+  const onSkipTurn = async () => {
+    const { drawnCard, targetPlayer } = await skipTurn();
 
-    for (const player of game.players) {
-      const currentPlayerCards = player.liveCards;
-      const playerPlayableCards: Card[] = [];
-
-      for (const card of currentPlayerCards) {
-        const canPlay = canPlayCard(card, currentPlayerCards, game.cardsPlayed);
-
-        if (canPlay) {
-          playerPlayableCards.push(card);
-        }
-      }
-
-      if (playerPlayableCards.length > 0) {
-        playableCards.push({ playerId: player.id, cards: playerPlayableCards });
-      }
+    if (drawnCard && targetPlayer) {
+      console.log('ok');
+      const targetRef =
+        targetPlayer.id === 'bot' ? opponentPlayerCardsRef : selfPlayerCardsRef;
+      moveCardsReceivedFromDeck(deckCardsRef, targetRef, [drawnCard]);
     }
-
-    // Log the playable cards for each player
-    // for (const entry of playableCards) {
-    //   console.log(
-    //     `Player ${entry.playerId} can play:`,
-    //     entry.cards.map((card) => card.value)
-    //   );
-    // }
-
-    return playableCards; // Return the list of playable cards
-  }
-
-  getPlayableCards(game);
+  };
 
   return (
     <GameBackgroundView>
@@ -86,8 +66,9 @@ const GameView: React.FC = () => {
       >
         {game.currentPlayer.id}
       </Text>
+
       <GameInformations game={game} style={styles.gameInformationsContainer} />
-      <CardsPile game={game} style={styles.cardsPileContainer} />
+      <CardsPile ref={deckCardsRef} cards={deckCards} />
       <PlayerCards
         ref={opponentPlayerCardsRef}
         cards={opponentPlayerCards}
@@ -105,7 +86,7 @@ const GameView: React.FC = () => {
       />
       <ButtonAction
         label='Skip'
-        onPress={skipTurn}
+        onPress={onSkipTurn}
         style={styles.buttonActionContainer}
       />
 

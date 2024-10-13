@@ -1,4 +1,5 @@
 import { randomUUID as uuidv4 } from 'expo-crypto';
+import _ from 'lodash';
 
 export interface CurrentCard {
   playerId: string;
@@ -32,6 +33,7 @@ export interface Game {
   currentPlayer: Player;
   cardsPlayed: CardHistory[];
   deck: Card[];
+  deckCardsGiven: Card[];
   discardPile: Card[];
   chosenLevel: BotDifficulty;
   action?: Action;
@@ -263,6 +265,7 @@ export const specialCards: Card[] = [
 
 // Combine the standard cards and special cards to create the deck
 export const deck: Card[] = [...standardCards, ...specialCards];
+export const deckCardsGiven: Card[] = [...specialCards];
 
 // Function to roll a dice (returns a random number between 1 and 6)
 export function rollDice(): number {
@@ -311,12 +314,6 @@ export function distributeCards(game: Game): void {
   const numberOfPlayers = players.length;
   const totalCards = numberOfPlayers * 14;
 
-  if (deck.length < totalCards - 3) {
-    // Adjust for the 3 cards already assigned
-    // console.log('Not enough cards in the deck to distribute to players.');
-    return;
-  }
-
   // Distribute the remaining cards
   for (let i = 0; i < totalCards - 3; i++) {
     const playerIndex = i % numberOfPlayers;
@@ -326,6 +323,24 @@ export function distributeCards(game: Game): void {
   }
 }
 
+// To prevent immutability
+// To prevent immutability and filter duplicate ids
+function deepCopyDeck(deck: Card[]): Card[] {
+  const newDeck: Card[] = [];
+  const seenIds = new Set<string>();
+
+  for (const card of deck) {
+    if (!seenIds.has(card.id)) {
+      const newCard = Object.assign({}, card, {
+        isLive: true,
+      });
+      newDeck.push(newCard);
+      seenIds.add(card.id);
+    }
+  }
+
+  return newDeck;
+}
 // Updated function to initialize the game, including the dice duel and card distribution
 export function initializeGame(players: Player[], deck: Card[]): Game {
   const game: Game = {
@@ -335,6 +350,7 @@ export function initializeGame(players: Player[], deck: Card[]): Game {
     currentPlayer: players[0],
     cardsPlayed: [],
     deck,
+    deckCardsGiven: [],
     discardPile: [],
     chosenLevel: BotDifficulty.EASY,
   };
@@ -367,14 +383,27 @@ export function initializeGame(players: Player[], deck: Card[]): Game {
 
 // Function to draw a card from the deck
 export function drawCardFromDeck(game: Game): Card | null {
-  const { deck } = game;
+  const { deck, deckCardsGiven } = game;
 
-  if (deck.length === 0) {
+  // Filter the deck to exclude cards that are in deckCardsGiven
+  const availableDeck = deck.filter(
+    (card) => !deckCardsGiven.some((givenCard) => givenCard.id === card.id)
+  );
+
+  console.log('availableDeck', availableDeck?.length);
+
+  if (availableDeck.length === 0) {
     // console.log('The deck is empty. Cannot draw a card.');
     return null;
   }
 
-  return deck.shift()!;
+  // Draw the first card from the filtered deck
+  const drawnCard = availableDeck.shift()!;
+
+  // Create a new array for deckCardsGiven to preserve immutability
+  game.deckCardsGiven = [...deckCardsGiven, drawnCard];
+
+  return drawnCard;
 }
 
 export function skipTurn(game: Game): Game {
@@ -395,7 +424,11 @@ export function skipTurn(game: Game): Game {
 }
 
 // Function to handle Helios rule when a player cannot or does not want to play a card
-export function rollDiceAndSkipTurn(game: Game): Game {
+export function rollDiceAndSkipTurn(game: Game): {
+  game: Game;
+  drawnCard?: Card;
+  targetPlayer?: Player;
+} {
   const { currentPlayer } = game;
   const diceRoll = rollDice();
   // console.log(`${currentPlayer.id} rolled: ${diceRoll}`);
@@ -417,8 +450,10 @@ export function rollDiceAndSkipTurn(game: Game): Game {
 
       // If the current player is found in the game.players array, add the drawn card to their cards
       if (currentPlayerIndex !== -1) {
-        game.players[currentPlayerIndex].cards.push(drawnCard);
+        game.players[currentPlayerIndex].liveCards.push(drawnCard);
       }
+      game = skipTurn(game);
+      return { game, drawnCard, targetPlayer: currentPlayer };
     }
   } else {
     game.action = addAction({
@@ -428,12 +463,9 @@ export function rollDiceAndSkipTurn(game: Game): Game {
     });
   }
 
-  game = skipTurn(game, currentPlayer);
+  game = skipTurn(game);
 
-  // Clean the cards history
-  game.cardsPlayed = [];
-
-  return game;
+  return { game, drawnCard: undefined, targetPlayer: undefined };
 }
 
 export const getCardOccurrences = (playerCards: Card[], card: Card) =>

@@ -17,6 +17,7 @@ import {
   playHades,
   playHypnos,
   ActionName,
+  rollDiceAndSkipTurn,
 } from 'gameFunctions';
 import { RootState } from '../reducers';
 import { ThunkDispatch } from '@reduxjs/toolkit';
@@ -118,7 +119,7 @@ export const actionSetCurrentPlayer = (
 };
 
 export const actionSkipTurn = (): ThunkAction<
-  void,
+  { drawnCard?: Card; targetPlayer?: Player },
   RootState,
   unknown,
   AnyAction
@@ -128,10 +129,10 @@ export const actionSkipTurn = (): ThunkAction<
     getState: () => RootState
   ) => {
     const currentGame = getState().game;
-    const game = skipTurn(currentGame);
+    const { game, drawnCard, targetPlayer } = rollDiceAndSkipTurn(currentGame);
 
     if (game) {
-      // Object re-assigned to force rerendering
+      //Object re-assigned to force rerendering
       dispatch({
         type: SKIP_TURN,
         payload: {
@@ -140,7 +141,9 @@ export const actionSkipTurn = (): ThunkAction<
           action: game.action,
         },
       });
+      return { drawnCard, targetPlayer };
     }
+    return { drawnCard, targetPlayer };
   };
 };
 
