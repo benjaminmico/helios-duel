@@ -414,12 +414,6 @@ export function skipTurn(game: Game): Game {
     (player) => player.id !== game.currentPlayer.id
   )!;
 
-  game.action = addAction({
-    id: ActionName.SKIP_TURN,
-    playerId: currentPlayer.id,
-    nextPlayerId: game.currentPlayer.id,
-  });
-  // console.log(`${currentPlayer} skip turn`);
   return game;
 }
 
